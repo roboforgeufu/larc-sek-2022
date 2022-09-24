@@ -15,16 +15,29 @@ motorB = Motor(Port.B)
 motorC = Motor(Port.C)
 motorA = Motor(Port.A)
 cronometro = StopWatch()
+sensorultra2 = UltrasonicSensor(Port.S2)
 sensorinfra3 = InfraredSensor(Port.S3)
 sensorinfra4 = InfraredSensor(Port.S4)
 
-while(sensorinfra3.distance()<30):
-    correcao = sensorinfra3.distance() - 5
-    if(abs(correcao)>5):
-        motorB.run(50 + 10*correcao)
-        motorC.run(50 - 10*correcao)
+dist = 10
+vel = 100
+valores = []
+while True:
+    difMotor = motorB.speed() - motorC.speed()
+    difInfra = sensorinfra3.distance() - dist
+    motorC.run(vel)
+    if(abs(difMotor)<20):
+        print("M:", difMotor, "\tI:", difInfra, "\t|", "OK")
+        motorB.run(vel)
+        if(abs(difInfra)>2):
+            motorB.run(vel+40*(difInfra/difInfra))
+    elif(difMotor>0):
+        print("M:", difMotor, "\tI:", difInfra, "\t|", "Aproximando..")
+        motorB.run(vel+40)
+        if(sensorinfra3.distance()<dist*0.75):
+            motorB.run(vel-40)
     else:
-        motorB.run(100)
-        motorC.run(100)
-motorB.hold()
-motorC.hold()
+        print("M:", difMotor, "\tI:", difInfra, "\t|", "Afastando..")
+        motorB.run(vel-40)
+        if(sensorinfra3.distance()>dist*1.25):
+            motorB.run(vel+40)

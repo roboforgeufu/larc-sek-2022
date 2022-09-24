@@ -16,13 +16,15 @@ sensorc2 = ColorSensor(Port.S2)
 def buraco(vel):
     flag=0
     tempo=(3200-5*vel)/2
-    while(sensorc1.reflection()>60 and sensorc2.reflection()>60):
+    reflex1 = sensorc1.reflection()
+    reflex2 = sensorc2.reflection()
+    while(reflex1>60 and reflex2>60):
         motorC.run(vel)
         motorB.run(vel)
     motorC.brake()
     motorB.brake()
 
-    if(sensorc1.reflection()<=60):
+    if(reflex1<=60):
         cronometro.reset()
         while(cronometro.time()<tempo):
             velT = vel - cronometro.time()
@@ -32,7 +34,7 @@ def buraco(vel):
         motorC.hold()
         motorB.hold()
         wait(200)
-        if(sensorc1.reflection()<10): 
+        if(reflex1<10): 
             ev3.speaker.beep()
             flag=1
         wait(200)
@@ -46,13 +48,13 @@ def buraco(vel):
             motorC.run(-velT)
         motorC.hold()
         motorB.hold()
-        while(sensorc2.reflection()>60):
+        while(reflex2>60):
             motorC.run(vel)
         motorC.hold()
-        while(sensorc1.reflection()<85):
+        while(reflex1<85):
             motorB.run(-vel/2)
         motorB.hold()
-        while(sensorc2.reflection()<85):
+        while(reflex2<85):
             motorC.run(-vel/2)   
 
     else:
@@ -65,7 +67,7 @@ def buraco(vel):
         motorC.hold()
         motorB.hold()
         wait(200)
-        if(sensorc2.reflection()<10): 
+        if(reflex2<10): 
             ev3.speaker.beep()
             flag=1
         wait(200)
@@ -78,13 +80,13 @@ def buraco(vel):
             motorC.run(-velT)
         motorC.hold()
         motorB.hold()
-        while(sensorc1.reflection()>60):
+        while(reflex1>60):
             motorB.run(vel)
         motorB.hold()
-        while(sensorc2.reflection()<85):
+        while(reflex2<85):
             motorC.run(-vel/2)
         motorC.hold()
-        while(sensorc1.reflection()<85):
+        while(reflex1<85):
             motorB.run(-vel/2)
 
     motorB.brake()
