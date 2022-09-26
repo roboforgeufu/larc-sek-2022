@@ -107,7 +107,7 @@ def anda_reto_graus(velBase,graus): #para dar ré os dois valores devem ser nega
 velB = 250
 vel = velB
 valorMin = 100
-flag = 0
+#flag = 0
 
 while True:
     motorB.run(velB*1.5)
