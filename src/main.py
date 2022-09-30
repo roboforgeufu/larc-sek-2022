@@ -18,14 +18,25 @@ Não devem estar nesse módulo:
     - Execução de código manipulando motores ou sensores diretamente
 """
 
+from pybricks.parameters import Port
+
 import utils
+from robot import Robot
 
 
-def main():
-    """Main."""
-    utils.ev3_print(utils.get_hostname())
+def testing():
+    """Main de testes"""
+
+    ev3_client = Robot(
+        motor_r=Port.B,
+        motor_l=Port.C,
+        infra_side=Port.S3,
+    )
+
+    utils.ev3_print(utils.get_hostname(), ev3=ev3_client.brick)
+
     return 0
 
 
 if __name__ == "__main__":
-    main()
+    testing()

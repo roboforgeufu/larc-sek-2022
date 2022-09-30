@@ -4,8 +4,10 @@ Módulo de utilidades gerais de código.
 
 import os
 
+from pybricks.hubs import EV3Brick
 
-def ev3_print(*args, ev3=None, **kwargs):
+
+def ev3_print(*args, ev3: EV3Brick = None, **kwargs):
     """
     Função para logs.
     Imprime os valores tanto na tela do EV3 (caso disponível) quanto na do terminal.

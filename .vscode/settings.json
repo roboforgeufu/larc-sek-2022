@@ -2,5 +2,10 @@
     "python.analysis.diagnosticSeverityOverrides": {
         "reportMissingImports": "none"
     },
-    "ev3devBrowser.download.include": "{src/**,drafts/**}"
+    "ev3devBrowser.download.include": "{src/**,drafts/**}",
+    "python.linting.pylintEnabled": true,
+    "python.linting.pylintArgs": [
+        "--disable=import-error"
+    ],
+    "python.formatting.provider": "black"
 }
