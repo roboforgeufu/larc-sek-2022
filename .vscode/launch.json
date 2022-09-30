@@ -8,7 +8,7 @@
             "name": "Download and Run current file",
             "type": "ev3devBrowser",
             "request": "launch",
-            "program": "/home/robot/${workspaceFolderBasename}/${relativeFile}",
+            "program": "/home/robot/${workspaceFolderBasename}/${relativeFileDirname}/${fileBasename}",
             "interactiveTerminal": true
         },
         {

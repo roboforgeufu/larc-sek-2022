@@ -1,5 +1,6 @@
 {
     "python.analysis.diagnosticSeverityOverrides": {
         "reportMissingImports": "none"
-    }
+    },
+    "ev3devBrowser.download.include": "{src/**,drafts/**}"
 }
