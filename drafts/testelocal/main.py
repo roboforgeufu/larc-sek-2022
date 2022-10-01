@@ -8,86 +8,179 @@ ev3 = EV3Brick()
 # Initialize.
 motorB = Motor(Port.B)
 motorC = Motor(Port.C)
-motorA = Motor(Port.A)
+# motorA = Motor(Port.A)
 cronometro = StopWatch()
 sensorc1 = ColorSensor(Port.S1)
 sensorc2 = ColorSensor(Port.S2)
 
-def buraco(vel):
-    flag=0
-    tempo=(3200-5*vel)/2
-    reflex1 = sensorc1.reflection()
-    reflex2 = sensorc2.reflection()
-    while(reflex1>60 and reflex2>60):
-        motorC.run(vel)
-        motorB.run(vel)
-    motorC.brake()
-    motorB.brake()
+def dc_acel(time,modo): #modo 1 termina vel 0 modo 2 vel max modo 3 começa vel max termina vel 0
 
-    if(reflex1<=60):
-        cronometro.reset()
-        while(cronometro.time()<tempo):
-            velT = vel - cronometro.time()
-            if(velT<vel/3): velT = vel/3
-            motorB.run(velT)
-            motorC.run(velT)
-        motorC.hold()
+    Kp = 3 
+    Ki = 0.02
+    Kd = 3
+
+    t = 0
+    integ = 0
+    erro = 0
+    reflex_saida = 75
+
+    cronometro.reset()
+    motorB.reset_angle(0)
+    motorC.reset_angle(0)
+
+    if(modo==1):
+        while(cronometro.time()<time):
+
+            erro0 = erro
+            erro = motorC.angle() - motorB.angle()
+            prop = erro*Kp 
+
+            if(-3<erro<3): integ = integ+(erro*Ki)
+
+            t0 = t
+            wait(1)
+            t = cronometro.time()
+            tempoDecor = t - t0
+            deriv = ((erro - erro0)*Kd)/tempoDecor
+
+            correcao = prop+integ+deriv
+            vel = -(cronometro.time()*20/time)**2+cronometro.time()*(400/time)+20
+
+            motorB.dc(vel+correcao)
+            motorC.dc(vel-correcao)
+
         motorB.hold()
-        wait(200)
-        if(reflex1<10): 
+        motorC.hold()
+
+    if(modo==2):
+        while(cronometro.time()<time):
+
+            erro0 = erro
+            erro = motorC.angle() - motorB.angle()
+            prop = erro*Kp 
+
+            if(-3<erro<3): integ = integ+(erro*Ki)
+
+            t0 = t
+            wait(1)
+            t = cronometro.time()
+            tempoDecor = t - t0
+            deriv = ((erro - erro0)*Kd)/tempoDecor
+
+            correcao = prop+integ+deriv
+            vel = -(cronometro.time()*10/time)**2+cronometro.time()*(200/time)+20
+
+            motorB.dc(vel+correcao)
+            motorC.dc(vel-correcao)
+            if(sensorc1.reflection()<reflex_saida or sensorc2.reflection()<reflex_saida): break
+
+        motorB.hold()
+        motorC.hold()
+
+    if(modo==3):
+        while(cronometro.time()<time):
+
+            erro0 = erro
+            erro = motorC.angle() - motorB.angle()
+            prop = erro*Kp 
+
+            if(-3<erro<3): integ = integ+(erro*Ki)
+
+            t0 = t
+            wait(1)
+            t = cronometro.time()
+            tempoDecor = t - t0
+            deriv = ((erro - erro0)*Kd)/tempoDecor
+
+            correcao = prop+integ+deriv
+            vel = -(cronometro.time()*10/time)**2+100
+
+            motorB.dc(vel+correcao)
+            motorC.dc(vel-correcao)
+            if(sensorc1.reflection()<reflex_saida or sensorc2.reflection()<reflex_saida): break
+
+        motorB.hold()
+        motorC.hold()
+
+
+def buraco():
+
+    vel=100
+    flag=0
+    flag2=0
+    tempo=100
+    
+    reflex_saida = 75 #maior do que o maior valor de reflexao entre as cores e a rampa e menor que o branco
+    reflex_branco = 85 #maior que o valor acima pra identificar o branco
+    reflex_buraco = 10 #maior que o valor do buraco (0) e menor do que o menor valor entre as cores e a rampa
+
+    if(sensorc1.reflection()<=reflex_saida):
+        cronometro.reset()
+        if(sensorc1.reflection()>10):
+            while(cronometro.time()<tempo):
+                motorB.dc(vel/3)
+                motorC.dc(vel/3)
+            motorC.hold()
+            motorB.hold()
+            wait(100)
+            flag2=1
+        if(sensorc1.reflection()<reflex_buraco): 
             ev3.speaker.beep()
             flag=1
-        wait(200)
+        wait(100)
         if(sensorc1.color()!=None and sensorc1.color()!=Color.WHITE):
             print(sensorc1.color())
             ev3.speaker.beep(1000)
             flag=2
+        wait(100)
         cronometro.reset()
-        while(cronometro.time()<tempo):
-            motorB.run(-velT)
-            motorC.run(-velT)
+        if not flag2:
+            while(cronometro.time()<tempo):
+                motorB.dc(-vel/3)
+                motorC.dc(-vel/3)
+            motorC.hold()
+            motorB.hold()
+        while(sensorc2.reflection()>reflex_saida):
+            motorC.dc(vel/2)
         motorC.hold()
+        while(sensorc1.reflection()<reflex_branco):
+            motorB.dc(-vel/3)
         motorB.hold()
-        while(reflex2>60):
-            motorC.run(vel)
-        motorC.hold()
-        while(reflex1<85):
-            motorB.run(-vel/2)
-        motorB.hold()
-        while(reflex2<85):
-            motorC.run(-vel/2)   
+        while(sensorc2.reflection()<reflex_branco):
+            motorC.dc(-vel/3)   
 
     else:
         cronometro.reset()
-        while(cronometro.time()<tempo):
-            velT = vel - cronometro.time()
-            if(velT<vel/3): velT = vel/3
-            motorB.run(velT)
-            motorC.run(velT)
-        motorC.hold()
-        motorB.hold()
-        wait(200)
-        if(reflex2<10): 
+        if(sensorc1.reflection()>10):
+            while(cronometro.time()<tempo):
+                motorB.dc(vel/3)
+                motorC.dc(vel/3)
+            motorC.hold()
+            motorB.hold()
+            wait(100)
+            flag2=1
+        if(sensorc2.reflection()<reflex_buraco): 
             ev3.speaker.beep()
             flag=1
-        wait(200)
+        wait(100)
         if(sensorc2.color()!=None and sensorc2.color()!=Color.WHITE):
             ev3.speaker.beep(1000)
             flag=2
         cronometro.reset()
-        while(cronometro.time()<tempo):
-            motorB.run(-velT)
-            motorC.run(-velT)
-        motorC.hold()
+        if not flag2:
+            while(cronometro.time()<tempo):
+                motorB.dc(-vel/3)
+                motorC.dc(-vel/3)
+            motorC.hold()
+            motorB.hold()
+        while(sensorc1.reflection()>reflex_saida):
+            motorB.dc(vel/2)
         motorB.hold()
-        while(reflex1>60):
-            motorB.run(vel)
-        motorB.hold()
-        while(reflex2<85):
-            motorC.run(-vel/2)
+        while(sensorc2.reflection()<reflex_branco):
+            motorC.dc(-vel/3)
         motorC.hold()
-        while(reflex1<85):
-            motorB.run(-vel/2)
+        while(sensorc1.reflection()<reflex_branco):
+            motorB.dc(-vel/3)
 
     motorB.brake()
     motorC.brake()
@@ -187,13 +280,22 @@ distRodas = 15.2
 diamRodas = 5.7
 rotacao = ((distRodas)/diamRodas)*360
 flag=0
-while flag!=1:
-    flag = buraco(300)
-    wait(100)
-    anda_reto_graus(-300,-100,1)
-    wait(200)
-    curva(round(rotacao/4))
-    wait(100)
+vel=100
+reflex_saida = 75
 
-
-    
+dc_acel(1000,2)
+cronometro.reset()
+time=800
+while(cronometro.time()<time):
+    velB = (cronometro.time()*10/time)**2-cronometro.time()*(200/time)+20
+    print(velB)
+    if(velB<20): velB=20
+    motorB.dc(velB)
+    motorC.dc(vel)
+    if(sensorc1.reflection()<reflex_saida or sensorc2.reflection()<reflex_saida): break
+motorC.brake()
+motorB.brake()
+dc_acel(10000,3)
+motorB.dc(0)
+motorB.dc(0)
+print(buraco())

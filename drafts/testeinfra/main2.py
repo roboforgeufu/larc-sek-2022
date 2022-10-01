@@ -112,13 +112,11 @@ def anda_buraco(velBase,modo): #1 até ver #2 até deixar de ver a parede
     t = 0
     integ = 0
     erro = 0
-    media = 0
     motorB.reset_angle(0)
     motorC.reset_angle(0)
     cronometro.reset()
     if(modo==1):
         while(sensorinfra3.distance()>25):
-            media = (motorB.angle() + motorC.angle())/2
             erro0 = erro
             erro = motorC.angle() - motorB.angle()
 
@@ -135,7 +133,6 @@ def anda_buraco(velBase,modo): #1 até ver #2 até deixar de ver a parede
             motorB.run(velBase+correcao)
     if(modo==2):
         while(sensorinfra3.distance()<25):
-            media = (motorB.angle() + motorC.angle())/2
             erro0 = erro
             erro = motorC.angle() - motorB.angle()
 
@@ -189,14 +186,13 @@ def mede_buraco_cm(velBase):
     graus = (motorB.angle()+motorC.angle())/2
     return (graus/360)*compRodas
 
-valoresM = []
 valoresI = []
 valorMin = 100
-vel = 300
+vel = 250
 dist = 15
 K1 = 5
 K2 = 0.5
-
+flag = 0
 
 #pega_parede()
 while True:
@@ -204,7 +200,6 @@ while True:
     velB = motorB.speed()
 
     difMotor = motorB.angle() - motorC.angle()
-    valoresM.append(difMotor)
     
     difInfra = sensorinfra3.distance() - dist
                 
@@ -215,40 +210,34 @@ while True:
         print("buraco")
         break 
 
-    elif(difInfra<0):
+    if(difInfra<0):
         motorC.run(velB*1.25+K1*abs(difInfra))
 
     elif(difInfra>=0):
-        motorB.run(velB*1.25)
-        motorC.run(velB*0.75)
-        wait(1000)
-        motorB.brake()
-        motorC.brake()
-        anda_reto_graus(velB,200)
-        
+        motorB.run(vel*1.15)
+        motorC.run(vel*0.85) 
+        wait(800)
+        anda_reto_graus(vel,100)
+        wait(200)
         while not flag:
             motorB.run(-vel/2)
             motorC.run(vel/2)
-            valoresI.append(sensorinfra3.distance())
-            if(len(valoresI)>5):
-                mediaI = sum(valoresI)/len(valoresI)
-                if(mediaI>mediaMin): 
-                    motorB.brake()
-                    motorC.brake()
-                    flag = 1
-                if(mediaMin>mediaI): mediaMin = mediaI
-                valoresI.clear()
-        
-        motorB.brake()
-        motorC.brake()
-        
 
+            if(sensorinfra3.distance()>valorMin): 
+                flag = 1
+            if(valorMin>sensorinfra3.distance()): valorMin = sensorinfra3.distance()
+        flag = 0
 
 motorB.brake()
 motorC.brake()
-anda_buraco(-100,1)
-anda_buraco(100,2)
-print(mede_buraco_cm(100),"cm")
+        
+
+
+# motorB.brake()
+# motorC.brake()
+# anda_buraco(-100,1)
+# anda_buraco(100,2)
+# print(mede_buraco_cm(100),"cm")
 
 # if(len(valoresM)>10): 
 #     media = sum(valoresM)/len(valoresM)
