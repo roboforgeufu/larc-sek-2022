@@ -1,4 +1,5 @@
 #!/usr/bin/env pybricks-micropython
+import math
 import time
 
 from pybricks.ev3devices import (
@@ -33,6 +34,10 @@ WHEEL_DIST = 15.3
 
 def robot_axis_to_motor_degrees(axis_degrees):
     return axis_degrees * (WHEEL_DIST / WHEEL_DIAMETER)
+
+
+def cm_to_motor_degrees(cm):
+    return cm * (360 / (math.pi * WHEEL_DIAMETER))
 
 
 def forward_while_same_reflection(speed_r=50, speed_l=50, reflection_diff=10):
@@ -79,7 +84,9 @@ def off_motors():
     motor_r.dc(0)
 
 
-def walk_degrees(degrees, speed=50):
+def walk_cm(cm, speed=50):
+    degrees = cm_to_motor_degrees(cm)
+
     initial_angle_l = motor_l.angle()
     initial_angle_r = motor_r.angle()
 
@@ -136,7 +143,7 @@ def katara_position_routine():
         ev3_print(location)
 
         if location == "EDGE":
-            walk_degrees(200, -50)
+            walk_cm(10, -50)
             turn(90)
         elif ":" in location:
             left_loc, right_loc = location.split(":")
@@ -144,26 +151,32 @@ def katara_position_routine():
                 # Lida com motor direito na borda
                 ev3.light.on(Color.GREEN)
                 ev3.speaker.beep()
-                walk_degrees(100, -50)
+                walk_cm(5, -50)
                 turn(45 if left_loc == "RAMP" else 180)
                 ev3.light.off()
             elif left_loc == "EDGE":
                 ev3.light.on(Color.ORANGE)
                 ev3.speaker.beep()
                 # Lida com motor esquerdo na borda
-                walk_degrees(100, -50)
+                walk_cm(5, -50)
                 turn(45 if left_loc == "RAMP" else 180, speed=-50)
                 ev3.light.off()
             else:
-                walk_degrees(100, -50)
+                walk_cm(5, -50)
                 turn(45)
         elif "RAMP" not in location:
-            walk_degrees(200, -50)
+            walk_cm(10, -50)
             turn(180)
         else:
             break
-
+    off_motors()
     # ROBO NA RAMPA
+
+    walk_cm(70)
+    turn(90, speed=-50)
+    forward_while_same_reflection()
+    walk_cm(10, -50)
+    turn(90)
     off_motors()
 
 
