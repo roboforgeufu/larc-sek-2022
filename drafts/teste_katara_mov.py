@@ -191,6 +191,42 @@ def wait_button_pressed(button: Button = Button.CENTER):
             break
 
 
+def align_pid(target=30, kp=0.7, ki=0, kd=0):
+    left_error_i = 0
+    right_error_i = 0
+    left_prev_error = 0
+    right_prev_error = 0
+
+    has_stopped_left = False
+    has_stopped_right = False
+    while not has_stopped_left and not has_stopped_right:
+        left_error = color_l.reflection() - target
+        right_error = color_r.reflection() - target
+
+        left_error_i += left_error
+        right_error_i += right_error
+
+        left_error_d = left_error - left_prev_error
+        right_error_d = right_error - right_prev_error
+
+        left_prev_error = left_error
+        right_prev_error = right_error
+
+        ev3_print(left_error, left_error_i, left_error_d)
+        left_pid_speed = kp * left_error + ki * left_error_i + kd * left_error_d
+        right_pid_speed = kp * right_error + ki * right_error_i + kd * right_error_d
+
+        # Limitante de velocidade
+        left_speed_sign = -1 if left_pid_speed < 0 else 1
+        left_pid_speed = min(75, abs(left_pid_speed)) * left_speed_sign
+
+        right_speed_sign = -1 if right_pid_speed < 0 else 1
+        right_pid_speed = min(75, abs(right_pid_speed)) * right_speed_sign
+
+        motor_l.dc(left_pid_speed)
+        motor_r.dc(right_pid_speed)
+
+
 def main():
     while True:
         wait_button_pressed()
@@ -204,5 +240,12 @@ def main_teste():
         )
 
 
+def main_teste_align():
+    ev3.speaker.beep()
+    while True:
+        wait_button_pressed()
+        align_pid()
+
+
 if __name__ == "__main__":
-    main()
+    main_teste_align()
