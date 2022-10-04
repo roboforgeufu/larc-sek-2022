@@ -118,7 +118,7 @@ def segue_linha_c1_buraco(vel):
     t = 0
 
     cores = []
-    cores_validas = [Color.YELLOW,Color.BLUE]
+    cores_validas = [Color.YELLOW,Color.BLUE,Color.RED]
 
     cronometro.reset()
     while True:
@@ -343,115 +343,48 @@ def curva(angulo): #angulo positivo: direita, negativo: esquerda
     motorC.hold()
     motorB.hold()
 
-def anda_reto_graus(velBase,graus,stop): #para dar ré os dois valores devem ser negativos
-    Kp = 3                               #stop 1: hold 2: brake 3: coast
-    Ki = 0.02
-    Kd = 3 
 
-    t = 0
-    integ = 0
-    erro = 0
-    media = 0
-    motorB.reset_angle(0)
-    motorC.reset_angle(0)
-    cronometro.reset()
-    if(graus<0):
-        while(media>graus):
-            media = (motorB.angle() + motorC.angle())/2
-            erro0 = erro
-            erro = motorC.angle() - motorB.angle()
 
-            prop = erro*Kp 
-            if(-3<erro<3): integ = integ+(erro*Ki)
-            t0 = t
-            t = cronometro.time()
-            tempoDecor = t - t0
-            if(tempoDecor<1): tempoDecor = 1
-            deriv = ((erro - erro0)*Kd)/tempoDecor
+def toph_position_routine():
+    forward_while_same_reflection(50,50,10)
+    location = check_land_position_by_color(sensorc1,sensorc2)
 
-            correcao = prop+integ+deriv
-            motorC.run(velBase-correcao)
-            motorB.run(velBase+correcao)
-    else:
-        while(media<graus):
-            media = (motorB.angle() + motorC.angle())/2
-            erro0 = erro
-            erro = motorC.angle() - motorB.angle()
+    while True:
+        if(location=="RAMP"):
 
-            prop = erro*Kp 
-            if(-3<erro<3): integ = integ+(erro*Ki)
-            t0 = t
-            t = cronometro.time()
-            tempoDecor = t - t0
-            if(tempoDecor<1): tempoDecor = 1
-            deriv = ((erro - erro0)*Kd)/tempoDecor
+            print("rampa")
+            dc_acel(500,3,0,1)
+            curva(rotacao/2-50)
+            forward_while_same_reflection(50,50,10)
+            location = check_land_position_by_color(sensorc1,sensorc2)
 
-            correcao = prop+integ+deriv
-            motorC.run(velBase-correcao)
-            motorB.run(velBase+correcao)
-    if(stop==1):
-        motorC.hold()
-        motorB.hold()
-    if(stop==2):
-        motorC.brake()
-        motorB.brake()
-    if(stop==3):
-        return
+        elif(location=="COLOR"):
+
+            print("cor")
+            curva_1roda(800,1)
+            segue_linha_c1(100,1500)
+            ordem_cores = segue_linha_c1_buraco(300)
+            print(ordem_cores)
+            if(len(ordem_cores)<2):
+                dc_acel(500,3,0,1)
+                curva(rotacao/2-50)
+                ordem_cores = segue_linha_c2_buraco(300,ordem_cores)
+                print(ordem_cores)
+                dc_acel(500,3,0,1)
+                curva(rotacao/2-70)
+                segue_linha_c1_buraco(300)
+            break
+
+        elif(location=="EDGE"):
+            
+            print("buraco")
+            dc_acel(500,3,0,1)
+            curva(-rotacao/4)
+            forward_while_same_reflection(50,50,10)
+            location = check_land_position_by_color(sensorc1,sensorc2)
 
 distRodas = 15.3
 diamRodas = 5.5
 rotacao = ((distRodas)/diamRodas)*360
 vel=100
-
-# dc_acel(5000,2,0,0)
-# cronometro.reset()
-# time=800
-# while(cronometro.time()<time):
-#     velB = (cronometro.time()*10/time)**2-cronometro.time()*(200/time)+20
-#     if(velB<20): velB=20
-#     motorB.dc(velB)
-#     motorC.dc(vel)
-#     if(sensorc1.reflection()<reflex_saida or sensorc2.reflection()<reflex_saida): break
-# motorC.brake()
-# motorB.brake()
-# dc_acel(10000,3,1,0)
-# motorB.dc(0)
-# motorB.dc(0)
-
-forward_while_same_reflection(50,50,10)
-location = check_land_position_by_color(sensorc1,sensorc2)
-
-while True:
-    if(location=="RAMP"):
-
-        print("rampa")
-        dc_acel(500,3,0,1)
-        curva(rotacao/2-50)
-        forward_while_same_reflection(50,50,10)
-        location = check_land_position_by_color(sensorc1,sensorc2)
-
-    elif(location=="COLOR"):
-
-        print("cor")
-        curva_1roda(800,1)
-        segue_linha_c1(100,1500)
-        ordem_cores = segue_linha_c1_buraco(300)
-        print(ordem_cores)
-        if(len(ordem_cores)<2):
-            dc_acel(500,3,0,1)
-            curva(rotacao/2-50)
-            ordem_cores = segue_linha_c2_buraco(300,ordem_cores)
-            print(ordem_cores)
-            dc_acel(500,3,0,1)
-            curva(rotacao/2-70)
-            segue_linha_c1_buraco(300)
-        break
-
-    elif(location=="EDGE"):
-        
-        print("buraco")
-        dc_acel(500,3,0,1)
-        curva(-rotacao/4)
-        forward_while_same_reflection(50,50,10)
-        location = check_land_position_by_color(sensorc1,sensorc2)
 
