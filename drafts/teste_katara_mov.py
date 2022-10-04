@@ -84,7 +84,12 @@ def off_motors():
     motor_r.dc(0)
 
 
-def walk_cm(cm, speed=50):
+def walk_cm(cm, speed=50, speed_l=None, speed_r=None):
+    if speed_l is None:
+        speed_l = speed
+    if speed_r is None:
+        speed_r = speed
+
     degrees = cm_to_motor_degrees(cm)
 
     initial_angle_l = motor_l.angle()
@@ -93,8 +98,8 @@ def walk_cm(cm, speed=50):
     while abs(initial_angle_l - motor_l.angle()) < abs(degrees) and abs(
         initial_angle_r - motor_r.angle()
     ) < abs(degrees):
-        motor_r.dc(speed)
-        motor_l.dc(speed)
+        motor_r.dc(speed_r)
+        motor_l.dc(speed_l)
 
 
 def accurate_color(rgb_tuple):
@@ -172,7 +177,7 @@ def katara_position_routine():
     off_motors()
     # ROBO NA RAMPA
 
-    walk_cm(70)
+    walk_cm(70, speed_l=50, speed_r=55)
     turn(90, speed=-50)
     forward_while_same_reflection()
     walk_cm(10, -50)
