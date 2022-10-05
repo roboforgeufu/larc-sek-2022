@@ -1,9 +1,9 @@
 #!/usr/bin/env pybricks-micropython
-from re import I
 from pybricks.hubs import EV3Brick
 from pybricks.ev3devices import Motor, ColorSensor
 from pybricks.parameters import Port, Color
 from pybricks.tools import StopWatch, wait
+
 # Initialize the EV3 brick.
 ev3 = EV3Brick()
 # Initialize.
@@ -65,6 +65,7 @@ def align_pid(target=30, kp=0.7, ki=0, kd=0):
             if(i>=50):
                 break
 
+
 def forward_while_same_reflection(speed_r=50, speed_l=50, reflection_diff=10):
     starting_ref_r = color_r.reflection()
     starting_ref_l = color_l.reflection()
@@ -89,6 +90,7 @@ def forward_while_same_reflection(speed_r=50, speed_l=50, reflection_diff=10):
             motor_l.hold()
     motor_l.dc(0)
     motor_r.dc(0)
+
 
 def accurate_color(rgb_tuple):
     if sum(rgb_tuple) == 0:
@@ -304,7 +306,6 @@ def turn(angle): #angle positivo: direita, negativo: esquerda
 
     motor_r.hold()
     motor_l.hold()
-
 
 
 def toph_position_routine():
