@@ -1,42 +1,94 @@
 #!/usr/bin/env pybricks-micropython
+from re import I
 from pybricks.hubs import EV3Brick
 from pybricks.ev3devices import Motor, ColorSensor
-from pybricks.parameters import Port, Color, Stop
+from pybricks.parameters import Port, Color
 from pybricks.tools import StopWatch, wait
 # Initialize the EV3 brick.
 ev3 = EV3Brick()
 # Initialize.
-motorB = Motor(Port.B)
-motorC = Motor(Port.C)
+motor_l = Motor(Port.B)
+motor_r = Motor(Port.C)
 # motorA = Motor(Port.A)
-cronometro = StopWatch()
-sensorc1 = ColorSensor(Port.S1)
-sensorc2 = ColorSensor(Port.S2)
+stopwatch = StopWatch()
+color_l = ColorSensor(Port.S1)
+color_r = ColorSensor(Port.S2)
+
+WHEEL_DIAMETER = 5.5
+WHEEL_DIST = 15.3
+ROTATION = ((WHEEL_DIST)/WHEEL_DIAMETER)*360
+
+
+def off_motors():
+    motor_l.dc(0)
+    motor_r.dc(0)
+
+def align_pid(target=30, kp=0.7, ki=0, kd=0):
+    i=0
+    fc = 0.9
+    left_error_i = 0
+    right_error_i = 0
+    left_prev_error = 0
+    right_prev_error = 0
+
+    has_stopped_left = False
+    has_stopped_right = False
+    while not has_stopped_left and not has_stopped_right:
+        left_error = color_l.reflection() - target
+        right_error = color_r.reflection() - (target*fc)
+
+        left_error_i += left_error
+        right_error_i += right_error
+
+        left_error_d = left_error - left_prev_error
+        right_error_d = right_error - right_prev_error
+
+        left_prev_error = left_error
+        right_prev_error = right_error
+
+        #ev3_print(left_error, left_error_i, left_error_d)
+        left_pid_speed = kp * left_error + ki * left_error_i + kd * left_error_d
+        right_pid_speed = kp * right_error + ki * right_error_i + kd * right_error_d
+
+        # Limitante de velocidade
+        left_speed_sign = -1 if left_pid_speed < 0 else 1
+        left_pid_speed = min(75, abs(left_pid_speed)) * left_speed_sign
+
+        right_speed_sign = -1 if right_pid_speed < 0 else 1
+        right_pid_speed = min(75, abs(right_pid_speed)) * right_speed_sign
+
+        motor_l.dc(left_pid_speed)
+        motor_r.dc(right_pid_speed)
+
+        if(abs(left_error) < 5 and abs(right_error) < 5):
+            i=i+1
+            if(i>=50):
+                break
 
 def forward_while_same_reflection(speed_r=50, speed_l=50, reflection_diff=10):
-    starting_ref_r = sensorc2.reflection()
-    starting_ref_l = sensorc1.reflection()
+    starting_ref_r = color_r.reflection()
+    starting_ref_l = color_l.reflection()
 
     stopped_l = False
     stopped_r = False
     while not stopped_l or not stopped_r:
-        diff_ref_r = sensorc2.reflection() - starting_ref_r
-        diff_ref_l = sensorc1.reflection() - starting_ref_l
+        diff_ref_r = color_r.reflection() - starting_ref_r
+        diff_ref_l = color_l.reflection() - starting_ref_l
         if abs(diff_ref_r) < reflection_diff:
-            motorC.dc(speed_r)
+            motor_r.dc(speed_r)
         else:
             if not stopped_l:
                 stopped_l = True
-            motorC.hold()
+            motor_r.hold()
 
         if abs(diff_ref_l) < reflection_diff:
-            motorB.dc(speed_l)
+            motor_l.dc(speed_l)
         else:
             if not stopped_r:
                 stopped_r = True
-            motorB.hold()
-    motorB.dc(0)
-    motorC.dc(0)
+            motor_l.hold()
+    motor_l.dc(0)
+    motor_r.dc(0)
 
 def accurate_color(rgb_tuple):
     if sum(rgb_tuple) == 0:
@@ -51,9 +103,9 @@ def accurate_color(rgb_tuple):
         return Color.BLACK
 
 
-def check_land_position_by_color(sensorc1: ColorSensor, sensorc2: ColorSensor) -> str:
-    color_left = accurate_color(sensorc1.rgb())
-    color_right = accurate_color(sensorc2.rgb())
+def check_land_position_by_color(color_l: ColorSensor, color_r: ColorSensor) -> str:
+    color_left = accurate_color(color_l.rgb())
+    color_right = accurate_color(color_r.rgb())
 
     if color_left == Color.GREEN:
         pos_left = "RAMP"
@@ -77,314 +129,225 @@ def check_land_position_by_color(sensorc1: ColorSensor, sensorc2: ColorSensor) -
     return str(pos_left + ":" + pos_right)
 
 
-def segue_linha_c1(vel,tempo):
-    valorLum = 35 #medir na linha toda vez
-    Kp = 3.5
-    Ki = 0.05 
-    Kd = 10
+def line_grabber(vel,time,sensor):
+    target = 35 #medir na linha toda vez
+    kp = 3.5
+    ki = 0.05 
+    kd = 10
 
-    erro = 0
-    valorI = 0
-    t = 0
-    cronometro.reset()
+    error = 0
+    i_share = 0
+    elapsed_time = 0
+
+    stopwatch.reset()
     while True:
-        erro0 = erro  
-        erro = valorLum - sensorc1.reflection()  
-        valorP = erro*Kp
-        if(-3<erro<3): valorI = (valorI+erro)*Ki
-        t0 = t
-        t = cronometro.time()
-        tempoDecor = t - t0
-        if(tempoDecor<1): tempoDecor = 1
-        valorD = ((erro - erro0)*Kd)/tempoDecor
+        prev_error = error  
+        error = target - sensor.reflection()  
+        p_share = error*kp
 
-        valorPID = valorP + valorI + valorD
+        if(abs(error)<3): i_share = (i_share+error)*ki
 
-        motorC.run(vel+valorPID)
-        motorB.run(vel-valorPID)
+        prev_elapsed_time = elapsed_time
+        wait(1)
+        elapsed_time = stopwatch.time()
+        d_share = ((error - prev_error)*kd)/(elapsed_time-prev_elapsed_time)
 
-        if(cronometro.time()>tempo): break
-    motorC.hold()
-    motorB.hold()
+        pid_correction = p_share + i_share + d_share
 
-def segue_linha_c1_buraco(vel):
-    valorLum = 35 #medir na linha toda vez
-    Kp = 3.5
-    Ki = 0.05 
-    Kd = 10
+        pid_sign = 1 if sensor==color_l else -1
+        motor_r.run(vel+(pid_correction*pid_sign))
+        motor_l.run(vel-(pid_correction*pid_sign))
 
-    erro = 0
-    valorI = 0
-    t = 0
+        if(stopwatch.time()>time): break
+    off_motors()
 
-    cores = []
-    cores_validas = [Color.YELLOW,Color.BLUE,Color.RED]
+def line_follower_color_id(vel,sensor_follow,sensor_color,array):
+    target = 35 #medir na linha toda vez
+    kp = 0.25
+    ki = 0.003
+    kd = 0.4
 
-    cronometro.reset()
+    error = 0
+    i_share = 0
+    elapsed_time = 0
+
+    valid_colors = [Color.YELLOW,Color.BLUE,Color.RED]
+
+    stopwatch.reset()
     while True:
-        erro0 = erro  
-        erro = valorLum - sensorc1.reflection()  
-        valorP = erro*Kp
-        if(-3<erro<3): valorI = (valorI+erro)*Ki
-        t0 = t
-        t = cronometro.time()
-        tempoDecor = t - t0
-        if(tempoDecor<1): tempoDecor = 1
-        valorD = ((erro - erro0)*Kd)/tempoDecor
+        prev_error = error  
+        error = target - sensor_follow.reflection()  
+        p_share = error*kp
 
-        valorPID = valorP + valorI + valorD
+        if(abs(error)<3): i_share = (i_share+error)*ki
 
-        motorC.run(vel+valorPID)
-        motorB.run(vel-valorPID)
+        prev_elapsed_time = elapsed_time
+        wait(1)
+        elapsed_time = stopwatch.time()
+        d_share = ((error - prev_error)*kd)/(elapsed_time - prev_elapsed_time)
 
-        if(sensorc2.color() not in cores and sensorc2.color() in cores_validas):
-            cores.append(sensorc2.color())
-            cores_validas.remove(sensorc2.color())
+        pid_correction = p_share + i_share + d_share
 
-        if(sensorc2.color()==None): break
-    motorC.hold()
-    motorB.hold()
+        pid_sign = 1 if sensor_follow==color_l else -1
 
-    return cores
+        motor_r.dc(vel+pid_correction*pid_sign)
+        motor_l.dc(vel-pid_correction*pid_sign)
 
-def segue_linha_c2_buraco(vel,array):
-    valorLum = 35 #medir na linha toda vez
-    Kp = 3.5
-    Ki = 0.05 
-    Kd = 10
+        if(sensor_color.color() not in array and sensor_color.color() in valid_colors):
+            array.append(sensor_color.color())
+            valid_colors.remove(sensor_color.color())
 
-    erro = 0
-    valorI = 0
-    t = 0
+        if(sensor_color.color()==None): break
 
-    cores_validas = [Color.YELLOW,Color.BLUE,Color.RED]
-    print(array)
-    cronometro.reset()
-    while True:
-        erro0 = erro  
-        erro = valorLum - sensorc2.reflection()  
-        valorP = erro*Kp
-        if(-3<erro<3): valorI = (valorI+erro)*Ki
-        t0 = t
-        t = cronometro.time()
-        tempoDecor = t - t0
-        if(tempoDecor<1): tempoDecor = 1
-        valorD = ((erro - erro0)*Kd)/tempoDecor
-
-        valorPID = valorP + valorI + valorD
-
-        motorC.run(vel-valorPID)
-        motorB.run(vel+valorPID)
-
-        if(sensorc1.color() not in array and sensorc1.color() in cores_validas):
-            array.append(sensorc1.color())
-            break
-
-    motorC.hold()
-    motorB.hold()
+    motor_r.hold()
+    motor_l.hold()
 
     return array
 
-def curva_1roda(time,modo):
+def turn_one_wheel(time,motor):
 
-    cronometro.reset()
-    while(cronometro.time()<time):
-        vel = -(cronometro.time()*10/time)**2+cronometro.time()*(200/time)+20
-        if(modo==1):
-            motorB.hold()
-            motorC.dc(vel)
-        if(modo==2):
-            motorC.hold()
-            motorB.dc(vel)
+    stopwatch.reset()
+    while(stopwatch.time()<time):
+        vel = -(stopwatch.time()*10/time)**2+stopwatch.time()*(200/time)+20
 
-    motorB.brake()
-    motorC.brake()
+        motor.dc(vel)
+        if(motor==motor_l): motor_r.hold()
+        else: motor_l.hold()
 
-def dc_acel(time,modo,brk,re): #modo 1 termina vel 0 modo 2 vel max modo 3 começa vel max termina vel 0
+    off_motors()
 
-    Kp = 3 
-    Ki = 0.02
-    Kd = 3
+def dc_accelerated(time,mode): #mode 1 termina vel 0 mode 2 vel max mode 3 começa vel max termina vel 0
+
+    kp = 3 
+    ki = 0.02
+    kd = 3
 
     t = 0
-    integ = 0
-    erro = 0
-    reflex_saida = 75
+    i_share = 0
+    error = 0
 
-    cronometro.reset()
-    motorB.reset_angle(0)
-    motorC.reset_angle(0)
+    stopwatch.reset()
+    motor_l.reset_angle(0)
+    motor_r.reset_angle(0)
 
-    if(modo==1):
-        while(cronometro.time()<time):
+    while(stopwatch.time()<abs(time)):
 
-            erro0 = erro
-            erro = motorC.angle() - motorB.angle()
-            prop = erro*Kp 
+        prev_error = error
+        error = motor_r.angle() - motor_l.angle()
+        p_share = error*kp 
 
-            if(-3<erro<3): integ = integ+(erro*Ki)
+        if(abs(error)<3): i_share = i_share+(error*ki)
 
-            t0 = t
-            wait(1)
-            t = cronometro.time()
-            tempoDecor = t - t0
-            deriv = ((erro - erro0)*Kd)/tempoDecor
+        t0 = t
+        wait(1)
+        t = stopwatch.time()
+        d_share = ((error - prev_error)*kd)/(t - t0)
 
-            correcao = prop+integ+deriv
-            vel = -(cronometro.time()*20/time)**2+cronometro.time()*(400/time)+20
+        pid_correction = p_share+i_share+d_share
 
-            if not re:
-                motorB.dc(vel+correcao)
-                motorC.dc(vel-correcao)
-            else:
-                motorB.dc((-1)*vel+correcao)
-                motorC.dc((-1)*vel-correcao)
-                
-            if brk: 
-                if(sensorc1.reflection()<reflex_saida or sensorc2.reflection()<reflex_saida): break
+        if(mode==1):
+            a=1
+            b=1
+            c=0
+        elif(mode==2):
+            a=0.5
+            b=0.5
+            c=0
+        elif(mode==3):
+            a=0.5
+            b=0
+            c=80
 
-        motorB.brake()
-        motorC.brake()
+        vel = -(t*a*20/abs(time))**2+t*(b*400/abs(time))+(c+20)
+        print(vel)
+        sign = -1 if time<0 else 1
+        motor_l.dc(sign*vel+pid_correction)
+        motor_r.dc(sign*vel-pid_correction)
 
-    if(modo==2):
-        while(cronometro.time()<time):
+    motor_l.hold()
+    motor_r.hold()
 
-            erro0 = erro
-            erro = motorC.angle() - motorB.angle()
-            prop = erro*Kp 
 
-            if(-3<erro<3): integ = integ+(erro*Ki)
-
-            t0 = t
-            wait(1)
-            t = cronometro.time()
-            tempoDecor = t - t0
-            deriv = ((erro - erro0)*Kd)/tempoDecor
-
-            correcao = prop+integ+deriv
-            vel = -(cronometro.time()*10/time)**2+cronometro.time()*(200/time)+20
-
-            if not re:
-                motorB.dc(vel+correcao)
-                motorC.dc(vel-correcao)
-            else:
-                motorB.dc((-1)*vel+correcao)
-                motorC.dc((-1)*vel-correcao)
-
-            if brk: 
-                if(sensorc1.reflection()<reflex_saida or sensorc2.reflection()<reflex_saida): break
-
-        motorB.brake()
-        motorC.brake()
-
-    if(modo==3):
-        while(cronometro.time()<time):
-
-            erro0 = erro
-            erro = motorC.angle() - motorB.angle()
-            prop = erro*Kp 
-
-            if(-3<erro<3): integ = integ+(erro*Ki)
-
-            t0 = t
-            wait(1)
-            t = cronometro.time()
-            tempoDecor = t - t0
-            deriv = ((erro - erro0)*Kd)/tempoDecor
-
-            correcao = prop+integ+deriv
-            vel = -(cronometro.time()*10/time)**2+100
-
-            if not re:
-                motorB.dc(vel+correcao)
-                motorC.dc(vel-correcao)
-            else:
-                motorB.dc((-1)*vel+correcao)
-                motorC.dc((-1)*vel-correcao)
-
-            if brk: 
-                if(sensorc1.reflection()<reflex_saida or sensorc2.reflection()<reflex_saida): break
-
-        motorB.hold()
-        motorC.hold()
-
-def curva(angulo): #angulo positivo: direita, negativo: esquerda
-    motorB.reset_angle(0)
-    motorC.reset_angle(0)
-    Kp = 4
-    Ki = 0.5
-    Kd = 10
+def turn(angle): #angle positivo: direita, negativo: esquerda
+    motor_l.reset_angle(0)
+    motor_r.reset_angle(0)
+    kp = 3
+    ki = 0.2
+    kd = 8
     
     t = 0
     integ = 0
-    erro = 0
-    while(motorB.angle()<angulo-20 or motorB.angle()>angulo+20):
-        media = (motorB.angle() - motorC.angle())/2
-        erro0 = erro
-        erro = angulo - media
+    error = 0
 
-        prop = erro*Kp
-        if(-3<erro<3): integ = integ+(erro*Ki)
+    ACCEPTABLE_ANGLE = 0.9*angle
+    while(motor_l.angle()<= ACCEPTABLE_ANGLE):
+        motor_angle_average = (motor_l.angle() - motor_r.angle())/2
+        prev_error = error
+        error = angle - motor_angle_average
+
+        prop = error*kp
+        if(abs(error)<3): integ = integ+(error*ki)
         t0 = t
-        t = cronometro.time()
+        t = stopwatch.time()
         tempoDecor = t - t0
         if(tempoDecor<1): tempoDecor = 1
-        deriv = ((erro - erro0)*Kd)/tempoDecor
+        deriv = ((error - prev_error)*kd)/tempoDecor
 
-        correcao = prop+integ+deriv
-        vel = 20 + correcao
+        correction = prop+integ+deriv
+        vel = 20 + correction
         if(vel<0):
             if(vel>-20): vel = -20
         else:
             if(vel<20): vel = 20
-        motorC.run(-vel)
-        motorB.run(vel)
+        motor_r.run(-vel)
+        motor_l.run(vel)
 
-    motorC.hold()
-    motorB.hold()
+    motor_r.hold()
+    motor_l.hold()
 
 
 
 def toph_position_routine():
-    forward_while_same_reflection(50,50,10)
-    location = check_land_position_by_color(sensorc1,sensorc2)
+    color_order = []
+    forward_while_same_reflection(80,100,10)
+    location = check_land_position_by_color(color_l,color_r)
 
     while True:
         if(location=="RAMP"):
-
-            print("rampa")
-            dc_acel(500,3,0,1)
-            curva(rotacao/2-50)
-            forward_while_same_reflection(50,50,10)
-            location = check_land_position_by_color(sensorc1,sensorc2)
+            align_pid(target=30, kp=0.7, ki=0.001, kd=0.3)
+            dc_accelerated(-500,3)
+            turn(ROTATION/2)
+            forward_while_same_reflection(80,80,10)
+            location = check_land_position_by_color(color_l,color_r)
 
         elif(location=="COLOR"):
-
-            print("cor")
-            curva_1roda(800,1)
-            segue_linha_c1(100,1500)
-            ordem_cores = segue_linha_c1_buraco(300)
-            print(ordem_cores)
-            if(len(ordem_cores)<2):
-                dc_acel(500,3,0,1)
-                curva(rotacao/2-50)
-                ordem_cores = segue_linha_c2_buraco(300,ordem_cores)
-                print(ordem_cores)
-                dc_acel(500,3,0,1)
-                curva(rotacao/2-70)
-                segue_linha_c1_buraco(300)
+            turn_one_wheel(800,1)
+            line_grabber(100,1500,color_l)
+            color_order = line_follower_color_id(100,color_l,color_r,color_order)
+            if(len(color_order)<2):
+                dc_accelerated(-500,2)
+                turn(ROTATION/2)
+                line_grabber(100,1500,color_r)
+                color_order = line_follower_color_id(100,color_r,color_l,color_order)
+                print(color_order)
+                dc_accelerated(-500,2)
+                turn(ROTATION/2)
+                line_grabber(100,1500,color_l)
+                line_follower_color_id(100,color_l,color_r,color_order)
             break
 
         elif(location=="EDGE"):
-            
-            print("buraco")
-            dc_acel(500,3,0,1)
-            curva(-rotacao/4)
-            forward_while_same_reflection(50,50,10)
-            location = check_land_position_by_color(sensorc1,sensorc2)
+            align_pid(target=30, kp=0.7, ki=0.001, kd=0.3)
+            dc_accelerated(-500,3)
+            turn((-ROTATION/4)-15)
+            forward_while_same_reflection(80,80,10)
+            location = check_land_position_by_color(color_l,color_r)
+        
+        else:
+            dc_accelerated(-500,3)
+            forward_while_same_reflection(100,80,10)
+            location = check_land_position_by_color(color_l,color_r)
 
-distRodas = 15.3
-diamRodas = 5.5
-rotacao = ((distRodas)/diamRodas)*360
-vel=100
 
+toph_position_routine()
+off_motors()
