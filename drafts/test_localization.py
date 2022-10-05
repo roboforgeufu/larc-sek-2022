@@ -224,7 +224,7 @@ def dc_accelerated(time,mode): #mode 1 termina vel 0 mode 2 vel max mode 3 come√
     ki = 0.02
     kd = 3
 
-    t = 0
+    elapsed_time = 0
     i_share = 0
     error = 0
 
@@ -240,10 +240,10 @@ def dc_accelerated(time,mode): #mode 1 termina vel 0 mode 2 vel max mode 3 come√
 
         if(abs(error)<3): i_share = i_share+(error*ki)
 
-        t0 = t
+        prev_elapsed_time = elapsed_time
         wait(1)
-        t = stopwatch.time()
-        d_share = ((error - prev_error)*kd)/(t - t0)
+        elapsed_time = stopwatch.time()
+        d_share = ((error - prev_error)*kd)/(elapsed_time - prev_elapsed_time)
 
         pid_correction = p_share+i_share+d_share
 
@@ -260,8 +260,7 @@ def dc_accelerated(time,mode): #mode 1 termina vel 0 mode 2 vel max mode 3 come√
             b=0
             c=80
 
-        vel = -(t*a*20/abs(time))**2+t*(b*400/abs(time))+(c+20)
-        print(vel)
+        vel = -(elapsed_time*a*20/abs(time))**2+elapsed_time*(b*400/abs(time))+(c+20)
         sign = -1 if time<0 else 1
         motor_l.dc(sign*vel+pid_correction)
         motor_r.dc(sign*vel-pid_correction)
@@ -277,21 +276,21 @@ def turn(angle): #angle positivo: direita, negativo: esquerda
     ki = 0.2
     kd = 8
     
-    t = 0
+    elapsed_time = 0
     integ = 0
     error = 0
 
     ACCEPTABLE_ANGLE = 0.9*angle
-    while(motor_l.angle()<= ACCEPTABLE_ANGLE):
+    while(abs(motor_l.angle())<= abs(ACCEPTABLE_ANGLE)):
         motor_angle_average = (motor_l.angle() - motor_r.angle())/2
         prev_error = error
         error = angle - motor_angle_average
 
         prop = error*kp
         if(abs(error)<3): integ = integ+(error*ki)
-        t0 = t
-        t = stopwatch.time()
-        tempoDecor = t - t0
+        prev_elapsed_time = elapsed_time
+        elapsed_time = stopwatch.time()
+        tempoDecor = elapsed_time - prev_elapsed_time
         if(tempoDecor<1): tempoDecor = 1
         deriv = ((error - prev_error)*kd)/tempoDecor
 
@@ -322,7 +321,7 @@ def toph_position_routine():
             location = check_land_position_by_color(color_l,color_r)
 
         elif(location=="COLOR"):
-            turn_one_wheel(800,1)
+            turn_one_wheel(800,motor_r)
             line_grabber(100,1500,color_l)
             color_order = line_follower_color_id(100,color_l,color_r,color_order)
             if(len(color_order)<2):
@@ -348,7 +347,6 @@ def toph_position_routine():
             dc_accelerated(-500,3)
             forward_while_same_reflection(100,80,10)
             location = check_land_position_by_color(color_l,color_r)
-
-
+ 
 toph_position_routine()
 off_motors()
