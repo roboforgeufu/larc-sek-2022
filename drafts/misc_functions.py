@@ -1,58 +1,3 @@
-#!/usr/bin/env pybricks-micropython
-from pybricks.ev3devices import ColorSensor, Motor
-from pybricks.hubs import EV3Brick
-from pybricks.parameters import Color, Port, Stop
-from pybricks.tools import StopWatch, wait
-
-# Initialize the EV3 brick.
-ev3 = EV3Brick()
-# Initialize.
-motorB = Motor(Port.B)
-motorC = Motor(Port.C)
-# motorA = Motor(Port.A)
-cronometro = StopWatch()
-
-
-def curva(angulo):  # angulo positivo: direita, negativo: esquerda
-    motorB.reset_angle(0)
-    motorC.reset_angle(0)
-    Kp = 4
-    Ki = 0.5
-    Kd = 10
-
-    t = 0
-    integ = 0
-    erro = 0
-    while motorB.angle() != angulo:
-        media = (motorB.angle() - motorC.angle()) / 2
-        erro0 = erro
-        erro = angulo - media
-
-        prop = erro * Kp
-        if -3 < erro < 3:
-            integ = integ + (erro * Ki)
-        t0 = t
-        t = cronometro.time()
-        tempoDecor = t - t0
-        # if tempoDecor < 1:
-        #     tempoDecor = 1
-        deriv = ((erro - erro0) * Kd) / tempoDecor
-
-        correcao = prop + integ + deriv
-        vel = 5 + correcao
-        if vel < 0:
-            if vel > -5:
-                vel = -5
-        else:
-            if vel < 5:
-                vel = 5
-        motorC.run(-vel)
-        motorB.run(vel)
-
-    motorC.hold()
-    motorB.hold()
-
-
 def anda_reto_graus(
     velBase, graus, stop
 ):  # para dar ré os dois valores devem ser negativos
@@ -242,22 +187,168 @@ def turn(aFuncao, bFuncao, cFuncao, grausCurva, fix=True):
                 break
 
 
-def sobe_garra():
+def mede_buraco_cm(velBase):
+    Kp = 3
+    Ki = 0.1
+    Kd = 5
+
+    t = 0
+    integ = 0
+    erro = 0
+    media = 0
+    motorB.reset_angle(0)
+    motorC.reset_angle(0)
     cronometro.reset()
-    while cronometro.time() < 400:
-        motorA.dc(100)
-    motorA.hold()
-    wait(500)
+    while sensorinfra3.distance() > 20:
+        media = (motorB.angle() + motorC.angle()) / 2
+        erro0 = erro
+        erro = motorC.angle() - motorB.angle()
+
+        prop = erro * Kp
+        if -3 < erro < 3:
+            integ = integ + (erro * Ki)
+        t0 = t
+        t = cronometro.time()
+        tempoDecor = t - t0
+        if tempoDecor < 1:
+            tempoDecor = 1
+        deriv = ((erro - erro0) * Kd) / tempoDecor
+
+        correcao = prop + integ + deriv
+        motorC.run(velBase - correcao)
+        motorB.run(velBase + correcao)
+    motorC.brake()
+    motorB.brake()
+
+    diamRodas = 5.5
+    compRodas = diamRodas * 3.14159265359  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
+    graus = (motorB.angle() + motorC.angle()) / 2
+    return (graus / 360) * compRodas
 
 
-def desce_garra():
+def anda_buraco(velBase, modo):  # 1 até ver #2 até deixar de ver a parede
+    Kp = 3
+    Ki = 0.1
+    Kd = 5
+
+    t = 0
+    integ = 0
+    erro = 0
+    motorB.reset_angle(0)
+    motorC.reset_angle(0)
     cronometro.reset()
-    while cronometro.time() < 300:
-        motorA.dc(-100)
-    motorA.hold()
-    wait(500)
+    if modo == 1:
+        while sensorinfra3.distance() > 25:
+            erro0 = erro
+            erro = motorC.angle() - motorB.angle()
+
+            prop = erro * Kp
+            if -3 < erro < 3:
+                integ = integ + (erro * Ki)
+            t0 = t
+            t = cronometro.time()
+            tempoDecor = t - t0
+            if tempoDecor < 1:
+                tempoDecor = 1
+            deriv = ((erro - erro0) * Kd) / tempoDecor
+
+            correcao = prop + integ + deriv
+            motorC.run(velBase - correcao)
+            motorB.run(velBase + correcao)
+    if modo == 2:
+        while sensorinfra3.distance() < 25:
+            erro0 = erro
+            erro = motorC.angle() - motorB.angle()
+
+            prop = erro * Kp
+            if -3 < erro < 3:
+                integ = integ + (erro * Ki)
+            t0 = t
+            t = cronometro.time()
+            tempoDecor = t - t0
+            if tempoDecor < 1:
+                tempoDecor = 1
+            deriv = ((erro - erro0) * Kd) / tempoDecor
+
+            correcao = prop + integ + deriv
+            motorC.run(velBase - correcao)
+            motorB.run(velBase + correcao)
+    motorC.brake()
+    motorB.brake()
 
 
-# anda_reto_graus(300,2000,2)
-# walk(aFuncao=-0.01, bFuncao=1, cFuncao=40, graus=2000)
-curva(-220)
+def pega_parede():
+
+    vel = 200
+    flag = 0
+    valoresI = []
+    angM = 0
+    mediaMin = 100
+
+    while sensorinfra2.distance() > 40 and sensorinfra2.distance() > 55:
+        motorB.run(vel)
+        motorC.run(vel)
+    motorB.reset_angle(0)
+    motorC.reset_angle(0)
+    while sensorinfra2.distance() < 40 and angM < 300:
+        angM = abs(motorB.angle() + motorC.angle()) / 2
+        print(angM)
+        motorB.run(-vel)
+        motorC.run(-vel)
+    while sensorinfra2.distance() < 60:  # and sensorinfra3.distance()>10
+        motorB.run(vel / 3)
+        motorC.run(vel * 2)
+    motorB.brake()
+    motorC.brake()
+    while not flag:
+        motorB.run(-vel / 2)
+        motorC.run(vel / 2)
+        valoresI.append(sensorinfra3.distance())
+        if len(valoresI) > 5:
+            mediaI = sum(valoresI) / len(valoresI)
+            if mediaI > mediaMin:
+                motorB.brake()
+                motorC.brake()
+                flag = 1
+            if mediaMin > mediaI:
+                mediaMin = mediaI
+            valoresI.clear()
+
+
+def mede_buraco_cm(velBase):
+    Kp = 3
+    Ki = 0.1
+    Kd = 5
+
+    t = 0
+    integ = 0
+    erro = 0
+    media = 0
+    motorB.reset_angle(0)
+    motorC.reset_angle(0)
+    cronometro.reset()
+    while sensorinfra3.distance() > 20:
+        media = (motorB.angle() + motorC.angle()) / 2
+        erro0 = erro
+        erro = motorC.angle() - motorB.angle()
+
+        prop = erro * Kp
+        if -3 < erro < 3:
+            integ = integ + (erro * Ki)
+        t0 = t
+        t = cronometro.time()
+        tempoDecor = t - t0
+        if tempoDecor < 1:
+            tempoDecor = 1
+        deriv = ((erro - erro0) * Kd) / tempoDecor
+
+        correcao = prop + integ + deriv
+        motorC.run(velBase - correcao)
+        motorB.run(velBase + correcao)
+    motorC.brake()
+    motorB.brake()
+
+    diamRodas = 5.5
+    compRodas = diamRodas * 3.14159265359  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
+    graus = (motorB.angle() + motorC.angle()) / 2
+    return (graus / 360) * compRodas
