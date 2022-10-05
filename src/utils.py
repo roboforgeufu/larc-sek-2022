@@ -5,6 +5,7 @@ Módulo de utilidades gerais de código.
 import os
 
 from pybricks.hubs import EV3Brick
+from pybricks.parameters import Color
 
 
 def ev3_print(*args, ev3: EV3Brick = None, **kwargs):
@@ -23,3 +24,16 @@ def get_hostname() -> str:
     """
     stream = os.popen("hostname")  # nosec
     return stream.read()
+
+
+def accurate_color(rgb_tuple):
+    if sum(rgb_tuple) == 0:
+        return None
+    if rgb_tuple[0] > 40 and rgb_tuple[1] > 40 and rgb_tuple[2] > 40:
+        return Color.WHITE
+    if rgb_tuple[0] in range(60, 75) and rgb_tuple[1] in range(30, 45):
+        return Color.YELLOW
+    if rgb_tuple[0] < 15 and rgb_tuple[1] > 15 and rgb_tuple[2] < 15:
+        return Color.GREEN
+    if rgb_tuple[0] < 15 and rgb_tuple[1] < 15 and rgb_tuple[2] < 15:
+        return Color.BLACK
