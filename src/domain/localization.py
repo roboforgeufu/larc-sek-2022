@@ -9,6 +9,10 @@ from src.utils import accurate_color, ev3_print
 
 
 def check_land_position_by_color(robot: Robot) -> str:
+    """
+    Identifica em qual local da área da terra o robô está (borda da meeting area com os dois
+    sensores pra fora), baseado na leitura dos sensores de cor.
+    """
     color_left = accurate_color(robot.color_l.rgb())
     color_right = accurate_color(robot.color_r.rgb())
 

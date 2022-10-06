@@ -5,7 +5,7 @@ Módulo de utilidades gerais de código.
 import os
 
 from pybricks.hubs import EV3Brick
-from pybricks.parameters import Color
+from pybricks.parameters import Button, Color
 
 
 def ev3_print(*args, ev3: EV3Brick = None, **kwargs):
@@ -27,6 +27,9 @@ def get_hostname() -> str:
 
 
 def accurate_color(rgb_tuple):
+    """
+    Processamento de cor pra evitar os erros da leitura padrão.
+    """
     if sum(rgb_tuple) == 0:
         return None
     if rgb_tuple[0] > 40 and rgb_tuple[1] > 40 and rgb_tuple[2] > 40:
@@ -37,3 +40,12 @@ def accurate_color(rgb_tuple):
         return Color.GREEN
     if rgb_tuple[0] < 15 and rgb_tuple[1] < 15 and rgb_tuple[2] < 15:
         return Color.BLACK
+
+
+def wait_button_pressed(ev3: EV3Brick, button: Button = Button.CENTER):
+    """
+    Trava execução até que o botão especificado seja pressionado.
+    """
+    while True:
+        if button in ev3.buttons.pressed():
+            break
