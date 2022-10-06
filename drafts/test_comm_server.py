@@ -1,11 +1,18 @@
 #!/usr/bin/env pybricks-micropython
-from pybricks.hubs import EV3Brick
-from pybricks.ev3devices import Motor, ColorSensor
-from pybricks.parameters import Port, Color, Stop
-from pybricks.tools import StopWatch, wait
-from pybricks.messaging import BluetoothMailboxServer, TextMailbox, NumericMailbox, LogicMailbox
 import math
 import time
+
+from pybricks.ev3devices import ColorSensor, Motor
+from pybricks.hubs import EV3Brick
+from pybricks.messaging import (
+    BluetoothMailboxServer,
+    LogicMailbox,
+    NumericMailbox,
+    TextMailbox,
+)
+from pybricks.parameters import Color, Port, Stop
+from pybricks.tools import StopWatch, wait
+
 # Initialize the EV3 brick.
 ev3 = EV3Brick()
 # Initialize.
@@ -24,6 +31,7 @@ color_r = sensorc2
 # paired using Bluetooth, but do NOT connect them. The program will take care
 # of establishing the connection.
 # The server must be started before the client!
+
 
 def ev3_print(*args, **kwargs):
     ev3.screen.print(*args, **kwargs)
@@ -50,6 +58,7 @@ def off_motors():
 
 WHEEL_DIAMETER = 5.5
 WHEEL_DIST = 15.3
+
 
 def robot_axis_to_motor_degrees(axis_degrees):
     return axis_degrees * (WHEEL_DIST / WHEEL_DIAMETER)
@@ -187,15 +196,15 @@ def katara_position_routine():
 
 
 server = BluetoothMailboxServer()
-print('waiting for connection...')
+print("waiting for connection...")
 server.wait_for_connection()
-print('connected!')
+print("connected!")
 
-ev3_print('1')
-logic_mbox = LogicMailbox('start', server)
-ev3_print('2')
+ev3_print("1")
+logic_mbox = LogicMailbox("start", server)
+ev3_print("2")
 logic_mbox.wait()
-ev3_print('3')
+ev3_print("3")
 start = logic_mbox.read()
 ev3_print(start)
 if start:

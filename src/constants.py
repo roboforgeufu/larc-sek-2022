@@ -11,5 +11,11 @@ Não devem estar nesse módulo:
     - Variáveis globais utilizadas para controle de algoritmos (que sofrem alterações em execução)
 """
 
+# Dimensões do Robô
+WHEEL_DIAMETER = 5.5
+WHEEL_DIST = 15.3
+
+# Comunicação
+SERVER = "katara"
 
 PID_TURN_ACCEPTABLE_DEGREES_PERC = 0.9

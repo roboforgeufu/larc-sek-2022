@@ -4,8 +4,8 @@ Módulo para funções que envolvem o problema da localização/mapeamento no ma
 
 from pybricks.parameters import Color
 
-from src.robot import Robot
-from src.utils import accurate_color, ev3_print
+from robot import Robot
+from utils import accurate_color, ev3_print
 
 
 def check_land_position_by_color(robot: Robot) -> str:
@@ -100,14 +100,14 @@ def land_position_routine(robot: Robot):
 
         elif location == "COLOR":
             robot.one_wheel_turn(800, robot.motor_r)
-            robot.line_grabber(100, 1500, robot.color_l)
+            robot.pid_line_grabber(100, 1500, robot.color_l)
             color_order = robot.pid_line_follower_color_id(
                 100, robot.color_l, robot.color_r, color_order
             )
             if len(color_order) < 2:
                 robot.pid_accelerated_walk(-500, 2)
                 robot.pid_turn(180)
-                robot.line_grabber(100, 1500, robot.color_r)
+                robot.pid_line_grabber(100, 1500, robot.color_r)
                 color_order = robot.pid_line_follower_color_id(
                     100, robot.color_r, robot.color_l, color_order
                 )

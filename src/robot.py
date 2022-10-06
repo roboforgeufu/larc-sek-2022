@@ -16,8 +16,8 @@ from pybricks.hubs import EV3Brick
 from pybricks.parameters import Color, Port
 from pybricks.tools import StopWatch, wait
 
-from src import constants as const
-from src.utils import PIDValues
+import constants as const
+from utils import PIDValues
 
 
 class Robot:
@@ -29,8 +29,8 @@ class Robot:
         self,
         wheel_diameter: float,
         wheel_distance: float,
-        motor_r: Port,
-        motor_l: Port,
+        motor_r: Port = None,
+        motor_l: Port = None,
         motor_claw: Port = None,
         infra_side: Port = None,
         infra_front: Port = None,
@@ -54,8 +54,10 @@ class Robot:
         self.stopwatch = StopWatch()
 
         # Motores
-        self.motor_r = Motor(motor_r)
-        self.motor_l = Motor(motor_l)
+        if motor_r is not None:
+            self.motor_r = Motor(motor_r)
+        if motor_l is not None:
+            self.motor_l = Motor(motor_l)
         if motor_claw is not None:
             self.motor_claw = Motor(motor_claw)
 
@@ -252,7 +254,7 @@ class Robot:
         """
 
         elapsed_time = 0
-        i_share = 0
+        i_share = 0.0
         error = 0
 
         self.stopwatch.reset()
