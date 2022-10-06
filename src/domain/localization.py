@@ -38,7 +38,8 @@ def check_land_position_by_color(robot: Robot) -> str:
     return str(pos_left + ":" + pos_right)
 
 
-def katara_position_routine(robot: Robot):
+def water_position_routine(robot: Robot):
+    """Rotina de identificação de posição no mapa do robô da água."""
     while True:
         robot.forward_while_same_reflection(60, 80)
         location = check_land_position_by_color(robot)
@@ -80,3 +81,53 @@ def katara_position_routine(robot: Robot):
     robot.simple_walk(10, -50)
     robot.simple_turn(90)
     robot.off_motors()
+
+
+def land_position_routine(robot: Robot):
+    """Rotina de identificação de posição no mapa do robô da terra."""
+
+    color_order = []  # type: ignore
+    robot.forward_while_same_reflection(80, 100, 10)
+    location = check_land_position_by_color(robot)
+
+    while True:
+        if location == "RAMP":
+            robot.pid_align()
+            robot.pid_accelerated_walk(-500, 3)
+            robot.pid_turn(180)
+            robot.forward_while_same_reflection(80, 80)
+            location = check_land_position_by_color(robot)
+
+        elif location == "COLOR":
+            robot.one_wheel_turn(800, robot.motor_r)
+            robot.line_grabber(100, 1500, robot.color_l)
+            color_order = robot.pid_line_follower_color_id(
+                100, robot.color_l, robot.color_r, color_order
+            )
+            if len(color_order) < 2:
+                robot.pid_accelerated_walk(-500, 2)
+                robot.pid_turn(180)
+                robot.line_grabber(100, 1500, robot.color_r)
+                color_order = robot.pid_line_follower_color_id(
+                    100, robot.color_r, robot.color_l, color_order
+                )
+                ev3_print(color_order, ev3=robot.brick)
+                robot.pid_accelerated_walk(-500, 2)
+                robot.pid_turn(180)
+                robot.pid_line_grabber(100, 1500, robot.color_l)
+                robot.pid_line_follower_color_id(
+                    100, robot.color_l, robot.color_r, color_order
+                )
+            break
+
+        elif location == "EDGE":
+            robot.pid_align()
+            robot.pid_accelerated_walk(-500, 3)
+            robot.pid_turn(-105)
+            robot.forward_while_same_reflection(80, 80, 10)
+            location = check_land_position_by_color(robot)
+
+        else:
+            robot.pid_accelerated_walk(-500, 3)
+            robot.forward_while_same_reflection(100, 80, 10)
+            location = check_land_position_by_color(robot)

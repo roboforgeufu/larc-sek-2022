@@ -8,6 +8,22 @@ from pybricks.hubs import EV3Brick
 from pybricks.parameters import Button, Color
 
 
+class PIDValues:  # pylint: disable=too-few-public-methods
+    """Variáveis de controle PID."""
+
+    def __init__(  # pylint: disable=invalid-name
+        self,
+        kp: float,
+        ki: float,
+        kd: float,
+        target=None,
+    ) -> None:
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.target = target
+
+
 def ev3_print(*args, ev3: EV3Brick = None, **kwargs):
     """
     Função para logs.

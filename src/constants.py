@@ -10,3 +10,6 @@ Não devem estar nesse módulo:
     - Qualquer tipo de código além de declaração de constantes
     - Variáveis globais utilizadas para controle de algoritmos (que sofrem alterações em execução)
 """
+
+
+PID_TURN_ACCEPTABLE_DEGREES_PERC = 0.9
