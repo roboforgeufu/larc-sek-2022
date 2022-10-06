@@ -5,7 +5,8 @@
     "ev3devBrowser.download.include": "{src/**,drafts/**}",
     "python.linting.pylintEnabled": true,
     "python.linting.pylintArgs": [
-        "--disable=import-error"
+        "--disable=import-error",
+        "--disable=invalid-name"
     ],
     "python.formatting.provider": "black"
 }

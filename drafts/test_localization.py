@@ -1,7 +1,7 @@
 #!/usr/bin/env pybricks-micropython
+from pybricks.ev3devices import ColorSensor, Motor
 from pybricks.hubs import EV3Brick
-from pybricks.ev3devices import Motor, ColorSensor
-from pybricks.parameters import Port, Color
+from pybricks.parameters import Color, Port
 from pybricks.tools import StopWatch, wait
 
 # Initialize the EV3 brick.
@@ -16,15 +16,16 @@ color_r = ColorSensor(Port.S2)
 
 WHEEL_DIAMETER = 5.5
 WHEEL_DIST = 15.3
-ROTATION = ((WHEEL_DIST)/WHEEL_DIAMETER)*360
+ROTATION = ((WHEEL_DIST) / WHEEL_DIAMETER) * 360
 
 
 def off_motors():
     motor_l.dc(0)
     motor_r.dc(0)
 
-def align_pid(target=30, kp=0.7, ki=0, kd=0):
-    i=0
+
+def align_pid(target=30, kp=0.7, ki=0.001, kd=0.3):
+    i = 0
     fc = 0.9
     left_error_i = 0
     right_error_i = 0
@@ -35,7 +36,7 @@ def align_pid(target=30, kp=0.7, ki=0, kd=0):
     has_stopped_right = False
     while not has_stopped_left and not has_stopped_right:
         left_error = color_l.reflection() - target
-        right_error = color_r.reflection() - (target*fc)
+        right_error = color_r.reflection() - (target * fc)
 
         left_error_i += left_error
         right_error_i += right_error
@@ -46,7 +47,7 @@ def align_pid(target=30, kp=0.7, ki=0, kd=0):
         left_prev_error = left_error
         right_prev_error = right_error
 
-        #ev3_print(left_error, left_error_i, left_error_d)
+        # ev3_print(left_error, left_error_i, left_error_d)
         left_pid_speed = kp * left_error + ki * left_error_i + kd * left_error_d
         right_pid_speed = kp * right_error + ki * right_error_i + kd * right_error_d
 
@@ -60,9 +61,9 @@ def align_pid(target=30, kp=0.7, ki=0, kd=0):
         motor_l.dc(left_pid_speed)
         motor_r.dc(right_pid_speed)
 
-        if(abs(left_error) < 5 and abs(right_error) < 5):
-            i=i+1
-            if(i>=50):
+        if abs(left_error) < 5 and abs(right_error) < 5:
+            i = i + 1
+            if i >= 50:
                 break
 
 
@@ -131,10 +132,10 @@ def check_land_position_by_color(color_l: ColorSensor, color_r: ColorSensor) -> 
     return str(pos_left + ":" + pos_right)
 
 
-def line_grabber(vel,time,sensor):
-    target = 35 #medir na linha toda vez
+def line_grabber(vel, time, sensor):
+    target = 35  # medir na linha toda vez
     kp = 3.5
-    ki = 0.05 
+    ki = 0.05
     kd = 10
 
     error = 0
@@ -143,28 +144,31 @@ def line_grabber(vel,time,sensor):
 
     stopwatch.reset()
     while True:
-        prev_error = error  
-        error = target - sensor.reflection()  
-        p_share = error*kp
+        prev_error = error
+        error = target - sensor.reflection()
+        p_share = error * kp
 
-        if(abs(error)<3): i_share = (i_share+error)*ki
+        if abs(error) < 3:
+            i_share = (i_share + error) * ki
 
         prev_elapsed_time = elapsed_time
         wait(1)
         elapsed_time = stopwatch.time()
-        d_share = ((error - prev_error)*kd)/(elapsed_time-prev_elapsed_time)
+        d_share = ((error - prev_error) * kd) / (elapsed_time - prev_elapsed_time)
 
         pid_correction = p_share + i_share + d_share
 
-        pid_sign = 1 if sensor==color_l else -1
-        motor_r.run(vel+(pid_correction*pid_sign))
-        motor_l.run(vel-(pid_correction*pid_sign))
+        pid_sign = 1 if sensor == color_l else -1
+        motor_r.run(vel + (pid_correction * pid_sign))
+        motor_l.run(vel - (pid_correction * pid_sign))
 
-        if(stopwatch.time()>time): break
+        if stopwatch.time() > time:
+            break
     off_motors()
 
-def line_follower_color_id(vel,sensor_follow,sensor_color,array):
-    target = 35 #medir na linha toda vez
+
+def line_follower_color_id(vel, sensor_follow, sensor_color, array):
+    target = 35  # medir na linha toda vez
     kp = 0.25
     ki = 0.003
     kd = 0.4
@@ -173,54 +177,66 @@ def line_follower_color_id(vel,sensor_follow,sensor_color,array):
     i_share = 0
     elapsed_time = 0
 
-    valid_colors = [Color.YELLOW,Color.BLUE,Color.RED]
+    valid_colors = [Color.YELLOW, Color.BLUE, Color.RED]
 
     stopwatch.reset()
     while True:
-        prev_error = error  
-        error = target - sensor_follow.reflection()  
-        p_share = error*kp
+        prev_error = error
+        error = target - sensor_follow.reflection()
+        p_share = error * kp
 
-        if(abs(error)<3): i_share = (i_share+error)*ki
+        if abs(error) < 3:
+            i_share = (i_share + error) * ki
 
         prev_elapsed_time = elapsed_time
         wait(1)
         elapsed_time = stopwatch.time()
-        d_share = ((error - prev_error)*kd)/(elapsed_time - prev_elapsed_time)
+        d_share = ((error - prev_error) * kd) / (elapsed_time - prev_elapsed_time)
 
         pid_correction = p_share + i_share + d_share
 
-        pid_sign = 1 if sensor_follow==color_l else -1
+        pid_sign = 1 if sensor_follow == color_l else -1
 
-        motor_r.dc(vel+pid_correction*pid_sign)
-        motor_l.dc(vel-pid_correction*pid_sign)
+        motor_r.dc(vel + pid_correction * pid_sign)
+        motor_l.dc(vel - pid_correction * pid_sign)
 
-        if(sensor_color.color() not in array and sensor_color.color() in valid_colors):
+        if sensor_color.color() not in array and sensor_color.color() in valid_colors:
             array.append(sensor_color.color())
             valid_colors.remove(sensor_color.color())
 
-        if(sensor_color.color()==None): break
+        if sensor_color.color() == None:
+            break
 
     motor_r.hold()
     motor_l.hold()
 
     return array
 
-def turn_one_wheel(time,motor):
+
+def turn_one_wheel(time, motor):
 
     stopwatch.reset()
-    while(stopwatch.time()<time):
-        vel = -(stopwatch.time()*10/time)**2+stopwatch.time()*(200/time)+20
+    while stopwatch.time() < time:
+        vel = (
+            -((stopwatch.time() * 10 / time) ** 2)
+            + stopwatch.time() * (200 / time)
+            + 20
+        )
 
         motor.dc(vel)
-        if(motor==motor_l): motor_r.hold()
-        else: motor_l.hold()
+        if motor == motor_l:
+            motor_r.hold()
+        else:
+            motor_l.hold()
 
     off_motors()
 
-def dc_accelerated(time,mode): #mode 1 termina vel 0 mode 2 vel max mode 3 começa vel max termina vel 0
 
-    kp = 3 
+def dc_accelerated(
+    time, mode
+):  # mode 1 termina vel 0 mode 2 vel max mode 3 começa vel max termina vel 0
+
+    kp = 3
     ki = 0.02
     kd = 3
 
@@ -232,74 +248,83 @@ def dc_accelerated(time,mode): #mode 1 termina vel 0 mode 2 vel max mode 3 come�
     motor_l.reset_angle(0)
     motor_r.reset_angle(0)
 
-    while(stopwatch.time()<abs(time)):
+    while stopwatch.time() < abs(time):
 
         prev_error = error
         error = motor_r.angle() - motor_l.angle()
-        p_share = error*kp 
+        p_share = error * kp
 
-        if(abs(error)<3): i_share = i_share+(error*ki)
+        if abs(error) < 3:
+            i_share = i_share + (error * ki)
 
         prev_elapsed_time = elapsed_time
         wait(1)
         elapsed_time = stopwatch.time()
-        d_share = ((error - prev_error)*kd)/(elapsed_time - prev_elapsed_time)
+        d_share = ((error - prev_error) * kd) / (elapsed_time - prev_elapsed_time)
 
-        pid_correction = p_share+i_share+d_share
+        pid_correction = p_share + i_share + d_share
 
-        if(mode==1):
-            a=1
-            b=1
-            c=0
-        elif(mode==2):
-            a=0.5
-            b=0.5
-            c=0
-        elif(mode==3):
-            a=0.5
-            b=0
-            c=80
+        if mode == 1:
+            a = 1
+            b = 1
+            c = 0
+        elif mode == 2:
+            a = 0.5
+            b = 0.5
+            c = 0
+        elif mode == 3:
+            a = 0.5
+            b = 0
+            c = 80
 
-        vel = -(elapsed_time*a*20/abs(time))**2+elapsed_time*(b*400/abs(time))+(c+20)
-        sign = -1 if time<0 else 1
-        motor_l.dc(sign*vel+pid_correction)
-        motor_r.dc(sign*vel-pid_correction)
+        vel = (
+            -((elapsed_time * a * 20 / abs(time)) ** 2)
+            + elapsed_time * (b * 400 / abs(time))
+            + (c + 20)
+        )
+        sign = -1 if time < 0 else 1
+        motor_l.dc(sign * vel + pid_correction)
+        motor_r.dc(sign * vel - pid_correction)
 
     motor_l.hold()
     motor_r.hold()
 
 
-def turn(angle): #angle positivo: direita, negativo: esquerda
+def turn(angle):  # angle positivo: direita, negativo: esquerda
     motor_l.reset_angle(0)
     motor_r.reset_angle(0)
     kp = 3
     ki = 0.2
     kd = 8
-    
+
     elapsed_time = 0
     integ = 0
     error = 0
 
-    ACCEPTABLE_ANGLE = 0.9*angle
-    while(abs(motor_l.angle())<= abs(ACCEPTABLE_ANGLE)):
-        motor_angle_average = (motor_l.angle() - motor_r.angle())/2
+    ACCEPTABLE_ANGLE = 0.9 * angle
+    while abs(motor_l.angle()) <= abs(ACCEPTABLE_ANGLE):
+        motor_angle_average = (motor_l.angle() - motor_r.angle()) / 2
         prev_error = error
         error = angle - motor_angle_average
 
-        prop = error*kp
-        if(abs(error)<3): integ = integ+(error*ki)
+        prop = error * kp
+        if abs(error) < 3:
+            integ = integ + (error * ki)
         prev_elapsed_time = elapsed_time
         elapsed_time = stopwatch.time()
         tempoDecor = elapsed_time - prev_elapsed_time
-        if(tempoDecor<1): tempoDecor = 1
-        deriv = ((error - prev_error)*kd)/tempoDecor
+        if tempoDecor < 1:
+            tempoDecor = 1
+        deriv = ((error - prev_error) * kd) / tempoDecor
 
-        correction = prop+integ+deriv
+        correction = prop + integ + deriv
         vel = 20 + correction
-        if(vel<0):
-            if(vel>-20): vel = -20
+        if vel < 0:
+            if vel > -20:
+                vel = -20
         else:
-            if(vel<20): vel = 20
+            if vel < 20:
+                vel = 20
         motor_r.run(-vel)
         motor_l.run(vel)
 
@@ -309,44 +334,45 @@ def turn(angle): #angle positivo: direita, negativo: esquerda
 
 def toph_position_routine():
     color_order = []
-    forward_while_same_reflection(80,100,10)
-    location = check_land_position_by_color(color_l,color_r)
+    forward_while_same_reflection(80, 100, 10)
+    location = check_land_position_by_color(color_l, color_r)
 
     while True:
-        if(location=="RAMP"):
-            align_pid(target=30, kp=0.7, ki=0.001, kd=0.3)
-            dc_accelerated(-500,3)
-            turn(ROTATION/2)
-            forward_while_same_reflection(80,80,10)
-            location = check_land_position_by_color(color_l,color_r)
+        if location == "RAMP":
+            align_pid()
+            dc_accelerated(-500, 3)
+            turn(ROTATION / 2)
+            forward_while_same_reflection(80, 80, 10)
+            location = check_land_position_by_color(color_l, color_r)
 
-        elif(location=="COLOR"):
-            turn_one_wheel(800,motor_r)
-            line_grabber(100,1500,color_l)
-            color_order = line_follower_color_id(100,color_l,color_r,color_order)
-            if(len(color_order)<2):
-                dc_accelerated(-500,2)
-                turn(ROTATION/2)
-                line_grabber(100,1500,color_r)
-                color_order = line_follower_color_id(100,color_r,color_l,color_order)
+        elif location == "COLOR":
+            turn_one_wheel(800, motor_r)
+            line_grabber(100, 1500, color_l)
+            color_order = line_follower_color_id(100, color_l, color_r, color_order)
+            if len(color_order) < 2:
+                dc_accelerated(-500, 2)
+                turn(ROTATION / 2)
+                line_grabber(100, 1500, color_r)
+                color_order = line_follower_color_id(100, color_r, color_l, color_order)
                 print(color_order)
-                dc_accelerated(-500,2)
-                turn(ROTATION/2)
-                line_grabber(100,1500,color_l)
-                line_follower_color_id(100,color_l,color_r,color_order)
+                dc_accelerated(-500, 2)
+                turn(ROTATION / 2)
+                line_grabber(100, 1500, color_l)
+                line_follower_color_id(100, color_l, color_r, color_order)
             break
 
-        elif(location=="EDGE"):
+        elif location == "EDGE":
             align_pid(target=30, kp=0.7, ki=0.001, kd=0.3)
-            dc_accelerated(-500,3)
-            turn((-ROTATION/4)-15)
-            forward_while_same_reflection(80,80,10)
-            location = check_land_position_by_color(color_l,color_r)
-        
+            dc_accelerated(-500, 3)
+            turn((-ROTATION / 4) - 15)
+            forward_while_same_reflection(80, 80, 10)
+            location = check_land_position_by_color(color_l, color_r)
+
         else:
-            dc_accelerated(-500,3)
-            forward_while_same_reflection(100,80,10)
-            location = check_land_position_by_color(color_l,color_r)
- 
+            dc_accelerated(-500, 3)
+            forward_while_same_reflection(100, 80, 10)
+            location = check_land_position_by_color(color_l, color_r)
+
+
 toph_position_routine()
 off_motors()
