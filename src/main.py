@@ -26,7 +26,7 @@ from pybricks.messaging import (
 from pybricks.parameters import Port
 
 import constants as const
-from domain.localization import land_position_routine, water_position_routine
+from domain.localization import land_position_routine, water_position_routine, check_land_position_by_color
 from robot import Robot
 from utils import ev3_print, get_hostname
 
@@ -97,6 +97,25 @@ def testing_comunications_locations():
             )
         )
 
+def main_test():
+    toph = Robot(
+        wheel_diameter=const.WHEEL_DIAMETER,
+        wheel_distance=const.WHEEL_DIST,
+        motor_r=Port.C,
+        motor_l=Port.B,
+        color_l=Port.S1,
+        color_r=Port.S2,
+        ultra_front_l=Port.S3,
+        ultra_front_r=Port.S4,
+    )
+
+
+    land_position_routine(toph)
+    toph.
+    toph.pid_turn(180)
+    toph.pid_walk(40)
+
 
 if __name__ == "__main__":
-    testing_comunications_locations()
+
+    main_test()

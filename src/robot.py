@@ -17,7 +17,7 @@ from pybricks.parameters import Color, Port
 from pybricks.tools import StopWatch, wait
 
 import constants as const
-from utils import PIDValues
+from utils import PIDValues, ev3_print
 
 
 class Robot:
@@ -131,6 +131,7 @@ class Robot:
                 if not stopped_r:
                     stopped_r = True
                 self.motor_l.hold()
+        self.off_motors()
 
     def simple_turn(self, angle, speed=50):
         """Curva simples"""
@@ -154,7 +155,7 @@ class Robot:
             vel = (
                 -((self.stopwatch.time() * 10 / time) ** 2)
                 + self.stopwatch.time() * (200 / time)
-                + 20,
+                + 20
             )
 
             motor.dc(vel)
@@ -234,6 +235,48 @@ class Robot:
         ) < abs(degrees):
             self.motor_r.dc(speed_r)
             self.motor_l.dc(speed_l)
+
+    def pid_walk(
+        self,
+        cm,
+        vel = 80,
+        pid: PIDValues = PIDValues(
+            kp=3,
+            ki=0.2,
+            kd=8,
+        ),
+    ):
+
+        degrees = self.cm_to_motor_degrees(cm)
+
+        elapsed_time = 0
+        i_share = 0
+        error = 0
+        motor_angle_average = 0
+        self.motor_l.reset_angle(0)
+        self.motor_r.reset_angle(0)
+        self.stopwatch.reset()
+
+        while abs(motor_angle_average) < abs(degrees):
+            motor_angle_average = (self.motor_l.angle() + self.motor_r.angle()) / 2
+            prev_error = error
+            error = self.motor_r.angle() - self.motor_l.angle()
+            p_share = error * pid.kp
+
+            if abs(error) < 3: 
+                i_share = i_share + (error * pid.ki)
+
+            prev_elapsed_time = elapsed_time
+            wait(1)
+            elapsed_time = self.stopwatch.time()
+
+            d_share = ((error - prev_error) * pid.kd) / (elapsed_time - prev_elapsed_time)
+
+            pid_correction = p_share + i_share + d_share
+            self.motor_r.dc(vel - pid_correction)
+            self.motor_l.dc(vel + pid_correction)
+
+        self.off_motors()
 
     def pid_accelerated_walk(
         self,
