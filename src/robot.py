@@ -73,7 +73,7 @@ class Robot:
 
         # Sensores ultrassonicos
         if ultra_side is not None:
-            self.ultra_side = ultra_side
+            self.ultra_side = UltrasonicSensor(ultra_side)
         if ultra_front_l is not None:
             self.ultra_front_l = UltrasonicSensor(ultra_front_l)
         if ultra_front_r is not None:
@@ -239,13 +239,14 @@ class Robot:
     def pid_walk(
         self,
         cm,
-        vel = 80,
+        vel=80,
         pid: PIDValues = PIDValues(
             kp=3,
             ki=0.2,
             kd=8,
         ),
     ):
+        """Anda em linha reta com controle PID entre os motores."""
 
         degrees = self.cm_to_motor_degrees(cm)
 
@@ -263,14 +264,16 @@ class Robot:
             error = self.motor_r.angle() - self.motor_l.angle()
             p_share = error * pid.kp
 
-            if abs(error) < 3: 
+            if abs(error) < 3:
                 i_share = i_share + (error * pid.ki)
 
             prev_elapsed_time = elapsed_time
             wait(1)
             elapsed_time = self.stopwatch.time()
 
-            d_share = ((error - prev_error) * pid.kd) / (elapsed_time - prev_elapsed_time)
+            d_share = ((error - prev_error) * pid.kd) / (
+                elapsed_time - prev_elapsed_time
+            )
 
             pid_correction = p_share + i_share + d_share
             self.motor_r.dc(vel - pid_correction)
@@ -507,3 +510,101 @@ class Robot:
         self.motor_l.hold()
 
         return array
+
+    def wall_aligner(self, speed: int = 30, max_angle: int = 300):
+        """Alinha na parede usando o mínimo local lido como alvo."""
+        self.off_motors()
+
+        initial_angle_r = self.motor_r.angle()
+        initial_angle_l = self.motor_l.angle()
+        reads = [self.infra_side.distance()]
+
+        # primeira leitura inicial, só pra ter uma noção da situação
+        while (
+            abs(self.motor_r.angle() - initial_angle_r) <= 50
+            and abs(self.motor_l.angle() - initial_angle_l) <= 50
+        ):
+            reads.append(self.infra_side.distance())
+            self.motor_r.dc(speed)
+            self.motor_l.dc(-speed)
+        self.motor_l.dc(0)
+        self.motor_r.dc(0)
+
+        if min(reads) < reads[0] and min(reads) < reads[-1]:
+            # a menor leitura das iniciais já está entre a primeira e a última leitura
+            # logo, já está suficientemente alinhado com a parede
+            self.brick.speaker.beep()
+            return
+
+        if reads[0] - reads[-1] >= 0:
+            # leituras estão diminuindo
+            direction_multiplier = 1
+            self.brick.light.on(Color.RED)
+        else:
+            # leituras estão aumentando, deve inverter a direção da curva
+            direction_multiplier = -1
+            self.brick.light.on(Color.ORANGE)
+
+        # if direction_multiplier == -1:
+        while self.infra_side.distance() > min(reads):
+            self.motor_r.dc(speed * direction_multiplier)
+            self.motor_l.dc(-speed * direction_multiplier)
+
+        initial_angle_r = self.motor_r.angle()
+        initial_angle_l = self.motor_l.angle()
+        reads.clear()
+
+        while (
+            abs(self.motor_r.angle() - initial_angle_r) <= max_angle
+            and abs(self.motor_l.angle() - initial_angle_l) <= max_angle
+        ):
+            self.motor_r.dc(speed * direction_multiplier)
+            self.motor_l.dc(-speed * direction_multiplier)
+
+            reads.append(self.infra_side.distance())
+
+            ev3_print(reads[-1])
+            if len(reads) > 2 and reads[-1] > reads[-2]:
+                # última leitura é maior que a penúltima
+                break
+        self.off_motors()
+
+    def pid_wall_follower(
+        self,
+        speed=50,
+        pid: PIDValues = PIDValues(
+            target=20,
+            kp=1,
+            ki=0.1,
+            kd=3,
+        ),
+    ):
+        """Seguidor de parede com controle PID simples."""
+        motor_error_i = 0
+        prev_motor_error = 0
+
+        self.motor_l.reset_angle(0)
+        self.motor_r.reset_angle(0)
+
+        while True:
+            motor_diff = self.motor_r.angle() - self.motor_l.angle()
+
+            dist_diff = self.infra_side.distance() - pid.target
+
+            motor_error = motor_diff + (20 * dist_diff)
+            motor_error_i += motor_error
+            motor_error_d = motor_error - prev_motor_error
+            prev_motor_error = motor_error
+
+            pid_speed = (
+                pid.kp * motor_error + pid.ki * motor_error_i + pid.kd * motor_error_d
+            )
+
+            ev3_print(
+                dist_diff,
+                ev3=self.brick,
+            )
+
+            self.motor_l.dc(speed + pid_speed)
+            self.motor_r.dc(speed - pid_speed)
+        self.off_motors()

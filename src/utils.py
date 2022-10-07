@@ -13,9 +13,9 @@ class PIDValues:  # pylint: disable=too-few-public-methods
 
     def __init__(  # pylint: disable=invalid-name
         self,
-        kp: float,
-        ki: float,
-        kd: float,
+        kp: float = 0,
+        ki: float = 0,
+        kd: float = 0,
         target=None,
     ) -> None:
         self.kp = kp
