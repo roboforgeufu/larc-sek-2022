@@ -511,6 +511,41 @@ class Robot:
 
         return array
 
+    def pid_align_wall(
+        self,
+        pid: PIDValues = PIDValues(target=100, kp=0.3, ki=0.001, kd=0.4),
+    ):
+
+        i_share = 0
+        elapsed_time = 0
+        error = 0
+        self.stopwatch.reset()
+        self.motor_l.reset_angle(0)
+        self.motor_r.reset_angle(0)
+        while True:
+
+            prev_error = error
+            error = self.ultra_front_l.distance() - self.ultra_front_r.distance()
+            p_share = error * pid.kp
+            print(error)
+            if abs(error) < 10:
+                i_share = i_share + (error * pid.ki)
+
+            prev_elapsed_time = elapsed_time
+            wait(1)
+            elapsed_time = self.stopwatch.time()
+
+            d_share = ((error - prev_error) * pid.kd) / (
+                elapsed_time - prev_elapsed_time
+            )
+
+            pid_correction = p_share + i_share + d_share
+
+            self.motor_r.dc(-10 - pid_correction)
+            self.motor_l.dc(10 + pid_correction)
+
+        self.off_motors()
+
     def wall_aligner(self, speed: int = 30, max_angle: int = 300):
         """Alinha na parede usando o mínimo local lido como alvo."""
         self.off_motors()
@@ -607,4 +642,80 @@ class Robot:
 
             self.motor_l.dc(speed + pid_speed)
             self.motor_r.dc(speed - pid_speed)
+        self.off_motors()
+
+    def find_duct(self):
+        lowest_ultra_value = 255
+        forward_velocity = max(60, 500 / self.stopwatch.time())
+        backward_velocity = min(-60, -500 / self.stopwatch.time())
+
+        self.motor_l.reset_angle(0)
+        self.motor_r.reset_angle(0)
+
+        self.stopwatch.reset()
+        while self.stopwatch.time() < 300:
+            wait(5)
+            self.motor_l.dc(forward_velocity)
+            self.motor_r.dc(backward_velocity)
+            prev_lowest_ultra_value = lowest_ultra_value
+            lowest_ultra_value = min(
+                lowest_ultra_value,
+                self.ultra_front_l.distance(),
+                self.ultra_front_r.distance(),
+            )
+            if prev_lowest_ultra_value != lowest_ultra_value:
+                escape_angle_l = self.motor_l.angle()
+                escape_angle_r = self.motor_r.angle()
+
+        self.stopwatch.reset()
+        while self.stopwatch.time() < 600:
+            wait(5)
+            self.motor_r.dc(forward_velocity)
+            self.motor_l.dc(backward_velocity)
+            prev_lowest_ultra_value = lowest_ultra_value
+            lowest_ultra_value = min(
+                lowest_ultra_value,
+                self.ultra_front_l.distance(),
+                self.ultra_front_r.distance(),
+            )
+            if prev_lowest_ultra_value != lowest_ultra_value:
+                escape_angle_l = self.motor_l.angle()
+                escape_angle_r = self.motor_r.angle()
+
+        self.stopwatch.reset()
+        while self.stopwatch.time() < 300:
+            wait(5)
+            self.motor_l.dc(forward_velocity)
+            self.motor_r.dc(backward_velocity)
+            prev_lowest_ultra_value = lowest_ultra_value
+            lowest_ultra_value = min(
+                lowest_ultra_value,
+                self.ultra_front_l.distance(),
+                self.ultra_front_r.distance(),
+            )
+            if prev_lowest_ultra_value != lowest_ultra_value:
+                escape_angle_l = self.motor_l.angle()
+                escape_angle_r = self.motor_r.angle()
+
+        target_angle_l = abs(self.motor_l.angle()) + escape_angle_l
+        target_angle_r = abs(self.motor_r.angle()) + escape_angle_r
+        self.motor_l.reset_angle(0)
+        self.motor_r.reset_angle(0)
+
+        if self.motor_l.angle() > escape_angle_l:
+            while (
+                abs(self.motor_l.angle()) < target_angle_l
+                or abs(self.motor_r.angle()) < target_angle_r
+            ):
+                print(abs(self.motor_l.angle()), abs(self.motor_r.angle()))
+                self.motor_r.dc(30)
+                self.motor_l.dc(-30)
+        else:
+            while (
+                abs(self.motor_l.angle()) < target_angle_l
+                or abs(self.motor_r.angle()) < target_angle_r
+            ):
+                self.motor_r.dc(-30)
+                self.motor_l.dc(30)
+
         self.off_motors()
