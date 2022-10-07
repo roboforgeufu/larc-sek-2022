@@ -719,3 +719,20 @@ class Robot:
                 self.motor_l.dc(30)
 
         self.off_motors()
+
+    def move_to_distance(
+        self,
+        distance: float,
+        sensor: UltrasonicSensor,
+        speed=30,
+    ):
+        """
+        Se move até ler determinada distância com o sensor dado.
+        """
+        diff = sensor.distance() - distance
+        while abs(diff) >= 5:
+            diff = sensor.distance() - distance
+            diff_sign = -1 if diff < 0 else 1
+            self.motor_l.dc(speed * diff_sign)
+            self.motor_r.dc(speed * diff_sign)
+        self.off_motors()
