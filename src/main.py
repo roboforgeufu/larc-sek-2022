@@ -103,18 +103,14 @@ def main_test():
         wheel_distance=const.WHEEL_DIST,
         motor_r=Port.C,
         motor_l=Port.B,
-        color_l=Port.S1,
-        color_r=Port.S2,
+        # color_l=Port.S1,
+        # color_r=Port.S2,
         ultra_front_l=Port.S3,
         ultra_front_r=Port.S4,
     )
 
-
-    land_position_routine(toph)
-    toph.
-    toph.pid_turn(180)
-    toph.pid_walk(40)
-
+    toph.find_duct()
+    toph.pid_align_wall()
 
 if __name__ == "__main__":
 
