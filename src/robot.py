@@ -146,6 +146,8 @@ class Robot:
             self.motor_r.dc(speed)
             self.motor_l.dc(-speed)
 
+        self.off_motors()
+
     def one_wheel_turn(self, time, motor: Motor):
         """
         Curva temporizada com uma roda.
@@ -724,15 +726,27 @@ class Robot:
         self,
         distance: float,
         sensor: UltrasonicSensor,
-        speed=30,
+        pid=PIDValues(kp=0.8, ki=0.05),
+        turning=0,
     ):
         """
         Se move até ler determinada distância com o sensor dado.
+
+        - turning é um valor percentual (0 a 1) positivo ou negativo que
+        representa o quanto a força será diferente entre dois motores, a fim de
+        fazer uma curva.
         """
         diff = sensor.distance() - distance
+        diff_i = 0
         while abs(diff) >= 5:
+            ev3_print(sensor.distance(), diff, ev3=self.brick)
             diff = sensor.distance() - distance
-            diff_sign = -1 if diff < 0 else 1
-            self.motor_l.dc(speed * diff_sign)
-            self.motor_r.dc(speed * diff_sign)
+            diff_i += diff
+
+            pid_speed = diff * pid.kp + diff_i * pid.ki
+            pid_speed = min(pid_speed, 30)
+            pid_speed = max(pid_speed, -30)
+
+            self.motor_l.dc(pid_speed * (1 + turning))
+            self.motor_r.dc(pid_speed * (1 - turning))
         self.off_motors()

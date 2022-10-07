@@ -16,7 +16,7 @@
             "type": "ev3devBrowser",
             "request": "launch",
             "program": "/home/robot/src/main.py",
-            "interactiveTerminal": true
+            "interactiveTerminal": false
         }
     ]
 }
