@@ -172,9 +172,9 @@ class Robot:
         self,
         angle,
         pid: PIDValues = PIDValues(
-            kp=3,
-            ki=0.2,
-            kd=8,
+            kp=1.5,
+            ki=0.01,
+            kd=2,
         ),
     ):
         """
@@ -188,37 +188,40 @@ class Robot:
         self.motor_r.reset_angle(0)
 
         elapsed_time = 0
-        integ = 0.0
+        i_share = 0.0
         error = 0
 
         acceptable_degrees = const.PID_TURN_ACCEPTABLE_DEGREES_PERC * motor_degrees
-        while abs(self.motor_l.angle()) <= abs(acceptable_degrees):
+        # while abs(self.motor_l.angle()) <= abs(acceptable_degrees):
+        while True:
             motor_angle_average = (self.motor_l.angle() - self.motor_r.angle()) / 2
             prev_error = error
             error = motor_degrees - motor_angle_average
+            p_share = error * pid.kp
 
-            prop = error * pid.kp
             if abs(error) < 3:
-                integ = integ + (error * pid.ki)
+                i_share = i_share + (error * pid.ki)
+
             prev_elapsed_time = elapsed_time
+            wait(1)
             elapsed_time = self.stopwatch.time()
+            d_share = ((error - prev_error) * pid.kd) / (elapsed_time - prev_elapsed_time)
 
-            tempoDecor = elapsed_time - prev_elapsed_time
-            tempoDecor = max(tempoDecor, 1)
-
-            deriv = ((error - prev_error) * pid.kd) / tempoDecor
-
-            correction = prop + integ + deriv
-            vel = 20 + correction
+            pid_correction = p_share + i_share + d_share
+            vel = 10 + pid_correction
             if vel < 0:
-                vel = min(vel, -20)
+                vel = min(vel, -10)
             else:
-                vel = max(vel, 20)
-            self.motor_r.run(-vel)
-            self.motor_l.run(vel)
+                vel = max(vel, 10)
+            self.motor_r.dc(-vel)
+            self.motor_l.dc(vel)
+            if(abs(self.motor_l.angle()) <= abs(acceptable_degrees) and angle>0):
+                self.off_motors()
+                break  
+            elif(abs(self.motor_l.angle()) >= abs(acceptable_degrees) and angle<0):
+                self.off_motors()
+                break
 
-        self.motor_r.hold()
-        self.motor_l.hold()
 
     def simple_walk(self, cm, speed=50, speed_l=None, speed_r=None):
         """Movimentação simples"""
@@ -349,8 +352,7 @@ class Robot:
             self.motor_l.dc(sign * vel + pid_correction)
             self.motor_r.dc(sign * vel - pid_correction)
 
-        self.motor_l.hold()
-        self.motor_r.hold()
+        self.off_motors()
 
     def pid_align(
         self,
@@ -610,10 +612,10 @@ class Robot:
         self,
         speed=50,
         pid: PIDValues = PIDValues(
-            target=20,
-            kp=1,
-            ki=0.1,
-            kd=3,
+            target=5,
+            kp=0.8,
+            ki=0.001,
+            kd=1,
         ),
     ):
         """Seguidor de parede com controle PID simples."""
@@ -644,7 +646,12 @@ class Robot:
 
             self.motor_l.dc(speed + pid_speed)
             self.motor_r.dc(speed - pid_speed)
-        self.off_motors()
+            if(self.infra_side.distance()>50):
+                self.off_motors()
+                return True
+            elif(self.ultra_front_r.distance()<50):
+                self.off_motors()
+                return False
 
     def find_duct(self):
         lowest_ultra_value = 255
@@ -750,3 +757,109 @@ class Robot:
             self.motor_l.dc(pid_speed * (1 + turning))
             self.motor_r.dc(pid_speed * (1 - turning))
         self.off_motors()
+
+    def hole_measurement(
+        self,
+        vel = 50,
+        pid: PIDValues = PIDValues(target=20,kp=1,ki=0.1,kd=3,
+        ),
+    ):
+        pid.kp = 3
+        pid.ki = 0.1
+        pid.kd = 5
+
+        elapsed_time = 0
+        i_share = 0
+        error = 0
+        self.motor_l.reset_angle(0)
+        self.motor_r.reset_angle(0)
+        self.stopwatch.reset()
+        while self.infra_side.distance() > pid.target:
+
+            prev_error = error
+            error = self.motor_r.angle() - self.motor_l.angle()
+
+            p_share = error * pid.kp
+            if abs(error) < 3:
+                i_share = i_share + (error * pid.ki)
+            prev_elapsed_time = elapsed_time
+            wait(1)
+            elapsed_time = self.stopwatch.time()
+            d_share = ((error - prev_error) * pid.kd) / (elapsed_time - prev_elapsed_time)
+
+            pid_correction = p_share + i_share + d_share
+            self.motor_r.dc(vel - pid_correction)
+            self.motor_l.dc(vel + pid_correction)
+        self.off_motors()
+
+        WHEEL_LENGTH = const.WHEEL_DIAMETER * math.pi  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
+        degrees = (self.motor_l.angle() + self.motor_r.angle()) / 2
+        return (degrees / 360) * WHEEL_LENGTH
+
+    def walk_to_hole(
+        self,
+        vel = 50,
+        mode = 1,
+        pid: PIDValues = PIDValues(kp=1,ki=0.1,kd=3,
+        ),
+    ):
+        pid.kp = 3
+        pid.ki = 0.1
+        pid.kd = 5
+
+        elapsed_time = 0
+        i_share = 0
+        error = 0
+        self.motor_l.reset_angle(0)
+        self.motor_r.reset_angle(0)
+        self.stopwatch.reset()
+        
+        if(mode==1):
+            while self.infra_side.distance() > 25:
+                prev_error = error
+                error = self.motor_r.angle() - self.motor_l.angle()
+                p_share = error * pid.kp
+
+                if abs(error) < 3:
+                    i_share = i_share + (error * pid.ki)
+
+                prev_elapsed_time = elapsed_time
+                wait(1)
+                elapsed_time = self.stopwatch.time()
+                d_share = ((error - prev_error) * pid.kd) / (elapsed_time - prev_elapsed_time)
+
+                pid_correction = p_share + i_share + d_share
+                self.motor_r.dc(-(vel + pid_correction))
+                self.motor_l.dc(-(vel - pid_correction))
+        
+        elif(mode==2):
+            while self.infra_side.distance() < 25:
+                prev_error = error
+                error = self.motor_r.angle() - self.motor_l.angle()
+                p_share = error * pid.kp
+
+                if abs(error) < 3:
+                    i_share = i_share + (error * pid.ki)
+
+                prev_elapsed_time = elapsed_time
+                wait(1)
+                elapsed_time = self.stopwatch.time()
+                d_share = ((error - prev_error) * pid.kd) / (elapsed_time - prev_elapsed_time)
+
+                pid_correction = p_share + i_share + d_share
+                self.motor_r.dc(vel - pid_correction)
+                self.motor_l.dc(vel + pid_correction)
+
+        self.off_motors()
+
+    def wall_turn(
+        self
+    ):  
+
+        self.stopwatch.reset()
+        while(self.infra_side.distance()>5 and self.stopwatch.time()<1000):
+            self.motor_l.dc(75)
+            self.motor_r.dc(25)
+        self.pid_accelerated_walk(time=500,mode=2)
+
+
