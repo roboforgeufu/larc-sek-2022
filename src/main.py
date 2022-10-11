@@ -128,45 +128,76 @@ def testing_duct_seek_routine():
     katara.ultra_front_r.distance()
     return None
 
+
+def log_reading_ultra_front():
+    katara = Robot(
+        wheel_diameter=const.WHEEL_DIAMETER,
+        wheel_distance=const.WHEEL_DIST,
+        motor_r=Port.C,
+        motor_l=Port.B,
+        color_l=Port.S1,
+        color_r=Port.S2,
+        ultra_front_l=Port.S3,
+        ultra_front_r=Port.S4,
+    )
+    logger = DataLog("L", "R", "motor_r", "motor_l", name="log_reading_ultra_front")
+
     max_degrees = 500
-    distance_range = 300
 
-    while True:
-        if (
-            katara.ultra_front_r.distance() < 80
-            and katara.ultra_front_l.distance() < 80
-        ):
-            katara.off_motors()
-            break
+    ultra_reads_r = []
+    # katara.ultra_front_r.distance(silent=True)
+    while abs(katara.motor_r.angle()) < max_degrees:
+        logger.log(
+            katara.ultra_front_l.distance(),
+            katara.ultra_front_r.distance(),
+            katara.motor_r.angle(),
+            katara.motor_l.angle(),
+        )
+        ultra_reads_r.append(
+            (
+                katara.motor_r.angle(),
+                katara.motor_l.angle(),
+                katara.ultra_front_r.distance(),
+            )
+        )
 
-        if (
-            katara.ultra_front_r.distance() < distance_range
-            and katara.ultra_front_l.distance() < distance_range
-        ):
-            katara.motor_r.dc(30)
-            katara.motor_l.dc(30)
-            continue
+        katara.motor_r.dc(-20)
+        katara.motor_l.dc(20)
+    katara.off_motors()
 
-        katara.off_motors()
+    # Pega menor leitura do ultrassonico
+    min_read = min(u_read for _, _, u_read in ultra_reads_r)
+    mean_read_half = (
+        sum(u_read for _, _, u_read in ultra_reads_r) / len(ultra_reads_r)
+    ) / 2
+    interval_range = range(min_read, int(mean_read_half) + 1)
+    print("interval_range:", interval_range)
 
-        katara.motor_l.reset_angle(0)
-        while (
-            abs(katara.motor_l.angle()) < max_degrees
-            and katara.ultra_front_l.distance() >= distance_range
-        ):
-            ev3_print(katara.ultra_front_l.distance(), ev3=katara.brick)
-            katara.motor_l.dc(30)
-        katara.off_motors()
+    close_reads = [read for read in ultra_reads_r if read[2] in interval_range]
 
-        katara.motor_r.reset_angle(0)
-        while (
-            abs(katara.motor_r.angle()) < max_degrees
-            and katara.ultra_front_r.distance() >= distance_range
-        ):
-            ev3_print(katara.ultra_front_r.distance(), ev3=katara.brick)
-            katara.motor_r.dc(30)
-        katara.off_motors()
+    print("==========================")
+    print("ultra_reads_r")
+    for e in ultra_reads_r:
+        print(e)
+    print("==========================")
+    print("close_reads")
+    for e in close_reads:
+        print(e)
+    print("==========================")
+    print("close_reads proportion:", len(close_reads) / len(ultra_reads_r))
+    print(
+        "close_reads mean:",
+        sum(u_read for _, _, u_read in close_reads) / len(close_reads),
+    )
+    print(
+        "close_reads motor_r mean:",
+        sum(mr_angle for mr_angle, _, _ in close_reads) / len(close_reads),
+    )
+    print(
+        "close_reads motor_l mean:",
+        sum(ml_angle for _, ml_angle, _ in close_reads) / len(close_reads),
+    )
 
 
 if __name__ == "__main__":
-    testing_duct_seek_routine()
+    log_reading_ultra_front()
