@@ -26,9 +26,10 @@ from pybricks.messaging import (
     LogicMailbox,
 )
 from pybricks.parameters import Port
+from pybricks.tools import DataLog
 
 import constants as const
-from domain.collect import align_duct_center, duct_ends
+from domain.collect import align_duct_center, duct_ends, find_duct
 from domain.localization import (
     check_land_position_by_color,
     land_position_routine,
@@ -105,65 +106,67 @@ def testing_comunications_locations():
         )
 
 
-def main_test():
-    katara = Robot(
-        wheel_diameter=const.WHEEL_DIAMETER,
-        wheel_distance=const.WHEEL_DIST,
-        motor_r=Port.C,
-        motor_l=Port.B,
-        color_l=Port.S1,
-        color_r=Port.S2,
-        ultra_front_l=Port.S3,
-        ultra_front_r=Port.S4,
-    )
-
-    align_duct_center(katara)
-    return None
-
-
 def testing_duct_seek_routine():
     katara = Robot(
         wheel_diameter=const.WHEEL_DIAMETER,
         wheel_distance=const.WHEEL_DIST,
         motor_r=Port.C,
         motor_l=Port.B,
-        color_l=Port.S1,
-        color_r=Port.S2,
         ultra_front_l=Port.S3,
         ultra_front_r=Port.S4,
     )
+    katara.align_front_wall()
+    katara.brick.speaker.beep()
+    time.sleep(1)
+    duct_ends(katara)
+    katara.brick.speaker.beep()
+    time.sleep(1)
+    duct_ends(katara, dir_sign=-1)
+    katara.brick.speaker.beep()
 
-    last_seen_us = "R"  # L ou R
+    katara.ultra_front_l.distance()
+    katara.ultra_front_r.distance()
+    return None
+
+    max_degrees = 500
+    distance_range = 300
 
     while True:
-        ev3_print(katara.ultra_front_l.distance(), katara.ultra_front_r.distance())
         if (
-            katara.ultra_front_l.distance() < 50
-            and katara.ultra_front_r.distance() < 50
+            katara.ultra_front_r.distance() < 80
+            and katara.ultra_front_l.distance() < 80
         ):
+            katara.off_motors()
             break
 
-        if katara.ultra_front_l.distance() < 300:
-            last_seen_us = "L"
-        if katara.ultra_front_r.distance() < 300:
-            last_seen_us = "R"
-
         if (
-            katara.ultra_front_l.distance() < 300
-            and katara.ultra_front_r.distance() < 300
+            katara.ultra_front_r.distance() < distance_range
+            and katara.ultra_front_l.distance() < distance_range
         ):
-            katara.motor_r.dc(50)
-            katara.motor_l.dc(50)
-        elif last_seen_us == "R":
-            katara.motor_l.dc(50)
-            katara.motor_r.dc(0)
-        else:
-            katara.motor_r.dc(50)
-            katara.motor_l.dc(0)
+            katara.motor_r.dc(30)
+            katara.motor_l.dc(30)
+            continue
 
-    katara.off_motors()
+        katara.off_motors()
+
+        katara.motor_l.reset_angle(0)
+        while (
+            abs(katara.motor_l.angle()) < max_degrees
+            and katara.ultra_front_l.distance() >= distance_range
+        ):
+            ev3_print(katara.ultra_front_l.distance(), ev3=katara.brick)
+            katara.motor_l.dc(30)
+        katara.off_motors()
+
+        katara.motor_r.reset_angle(0)
+        while (
+            abs(katara.motor_r.angle()) < max_degrees
+            and katara.ultra_front_r.distance() >= distance_range
+        ):
+            ev3_print(katara.ultra_front_r.distance(), ev3=katara.brick)
+            katara.motor_r.dc(30)
+        katara.off_motors()
 
 
 if __name__ == "__main__":
-
-    main_test()
+    testing_duct_seek_routine()

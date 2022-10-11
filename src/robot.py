@@ -646,88 +646,13 @@ class Robot:
             self.motor_r.dc(speed - pid_speed)
         self.off_motors()
 
-    def find_duct(self):
-        lowest_ultra_value = 255
-        forward_velocity = max(60, 500 / self.stopwatch.time())
-        backward_velocity = min(-60, -500 / self.stopwatch.time())
-
-        self.motor_l.reset_angle(0)
-        self.motor_r.reset_angle(0)
-
-        self.stopwatch.reset()
-        while self.stopwatch.time() < 300:
-            wait(5)
-            self.motor_l.dc(forward_velocity)
-            self.motor_r.dc(backward_velocity)
-            prev_lowest_ultra_value = lowest_ultra_value
-            lowest_ultra_value = min(
-                lowest_ultra_value,
-                self.ultra_front_l.distance(),
-                self.ultra_front_r.distance(),
-            )
-            if prev_lowest_ultra_value != lowest_ultra_value:
-                escape_angle_l = self.motor_l.angle()
-                escape_angle_r = self.motor_r.angle()
-
-        self.stopwatch.reset()
-        while self.stopwatch.time() < 600:
-            wait(5)
-            self.motor_r.dc(forward_velocity)
-            self.motor_l.dc(backward_velocity)
-            prev_lowest_ultra_value = lowest_ultra_value
-            lowest_ultra_value = min(
-                lowest_ultra_value,
-                self.ultra_front_l.distance(),
-                self.ultra_front_r.distance(),
-            )
-            if prev_lowest_ultra_value != lowest_ultra_value:
-                escape_angle_l = self.motor_l.angle()
-                escape_angle_r = self.motor_r.angle()
-
-        self.stopwatch.reset()
-        while self.stopwatch.time() < 300:
-            wait(5)
-            self.motor_l.dc(forward_velocity)
-            self.motor_r.dc(backward_velocity)
-            prev_lowest_ultra_value = lowest_ultra_value
-            lowest_ultra_value = min(
-                lowest_ultra_value,
-                self.ultra_front_l.distance(),
-                self.ultra_front_r.distance(),
-            )
-            if prev_lowest_ultra_value != lowest_ultra_value:
-                escape_angle_l = self.motor_l.angle()
-                escape_angle_r = self.motor_r.angle()
-
-        target_angle_l = abs(self.motor_l.angle()) + escape_angle_l
-        target_angle_r = abs(self.motor_r.angle()) + escape_angle_r
-        self.motor_l.reset_angle(0)
-        self.motor_r.reset_angle(0)
-
-        if self.motor_l.angle() > escape_angle_l:
-            while (
-                abs(self.motor_l.angle()) < target_angle_l
-                or abs(self.motor_r.angle()) < target_angle_r
-            ):
-                print(abs(self.motor_l.angle()), abs(self.motor_r.angle()))
-                self.motor_r.dc(30)
-                self.motor_l.dc(-30)
-        else:
-            while (
-                abs(self.motor_l.angle()) < target_angle_l
-                or abs(self.motor_r.angle()) < target_angle_r
-            ):
-                self.motor_r.dc(-30)
-                self.motor_l.dc(30)
-
-        self.off_motors()
-
     def move_to_distance(
         self,
         distance: float,
         sensor: UltrasonicSensor,
-        pid=PIDValues(kp=0.8, ki=0.05),
+        pid=PIDValues(kp=1, ki=0.0001, kd=0.01),
         turning=0,
+        single_motor: Motor = None,
     ):
         """
         Se move até ler determinada distância com o sensor dado.
@@ -735,18 +660,52 @@ class Robot:
         - turning é um valor percentual (0 a 1) positivo ou negativo que
         representa o quanto a força será diferente entre dois motores, a fim de
         fazer uma curva.
+        - single_motor é um motor opcional caso queira executar o movimento apenas com o motor
+        desejado. Se não for passado, os dois motores básicos são usados por padrão.
         """
         diff = sensor.distance() - distance
         diff_i = 0
-        while abs(diff) >= 5:
-            ev3_print(sensor.distance(), diff, ev3=self.brick)
+        prev_diff = diff
+        while abs(diff) >= 1:
+            # ev3_print(diff, diff_i, ev3=self.brick)
             diff = sensor.distance() - distance
             diff_i += diff
+            diff_d = diff - prev_diff
 
-            pid_speed = diff * pid.kp + diff_i * pid.ki
-            pid_speed = min(pid_speed, 30)
-            pid_speed = max(pid_speed, -30)
+            pid_speed = diff * pid.kp + diff_i * pid.ki + diff_d * pid.kd
 
-            self.motor_l.dc(pid_speed * (1 + turning))
-            self.motor_r.dc(pid_speed * (1 - turning))
+            if pid_speed < 5:
+                break
+
+            ev3_print(pid_speed, ev3=self.brick)
+            if single_motor is None:
+                self.motor_l.dc(pid_speed * (1 + turning))
+                self.motor_r.dc(pid_speed * (1 - turning))
+            else:
+                single_motor.dc(pid_speed)
+        ev3_print(sensor.distance(), ev3=self.brick)
         self.off_motors()
+
+    def align_front_wall(self):
+        dist_right = self.ultra_front_r.distance()
+        dist_left = self.ultra_front_l.distance()
+
+        if dist_right > dist_left:
+            # O sensor da esquerda está mais perto
+            sensor_far = self.ultra_front_r
+            motor_far = self.motor_r
+            sensor_close = self.ultra_front_l
+            motor_close = self.motor_l
+        else:
+            # O sensor da direita está mais perto
+            sensor_far = self.ultra_front_l
+            motor_far = self.motor_l
+            sensor_close = self.ultra_front_r
+            motor_close = self.motor_r
+
+        sensor_far.distance(silent=True)  # silencia sensor que tá mais longe
+        self.move_to_distance(80, sensor=sensor_close)
+        sensor_close.distance(silent=True)  # silencia sensor mais perto
+        self.move_to_distance(80, sensor=sensor_far, single_motor=motor_far)
+        sensor_far.distance(silent=True)  # silencia sensor mais longe
+        self.move_to_distance(80, sensor=sensor_close, single_motor=motor_close)
