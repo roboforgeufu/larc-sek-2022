@@ -202,14 +202,16 @@ class Robot:
             if abs(error) < 20:
                 i_share = i_share + (error * pid.ki)
 
-            while(error<20):
-                i+=1
-                if(i>500):
+            while error < 20:
+                i += 1
+                if i > 500:
                     break
             prev_elapsed_time = elapsed_time
             wait(1)
             elapsed_time = self.stopwatch.time()
-            d_share = ((error - prev_error) * pid.kd) / (elapsed_time - prev_elapsed_time)
+            d_share = ((error - prev_error) * pid.kd) / (
+                elapsed_time - prev_elapsed_time
+            )
 
             pid_correction = p_share + i_share + d_share
             vel = 20 + pid_correction
@@ -219,12 +221,12 @@ class Robot:
                 vel = max(vel, 20)
             self.motor_r.dc(-vel)
             self.motor_l.dc(vel)
-            target = (abs(self.motor_l.angle())+abs(self.motor_l.angle()))/2
+            target = (abs(self.motor_l.angle()) + abs(self.motor_l.angle())) / 2
 
-            if target >= abs(acceptable_degrees) and angle>0:
+            if target >= abs(acceptable_degrees) and angle > 0:
                 self.off_motors()
-                break  
-            elif target >= abs(acceptable_degrees) and angle<0:
+                break
+            elif target >= abs(acceptable_degrees) and angle < 0:
                 self.off_motors()
                 break
 
@@ -653,95 +655,20 @@ class Robot:
             self.motor_l.dc(speed + pid_speed)
             self.motor_r.dc(speed - pid_speed)
 
-            if(self.infra_side.distance()>50):
+            if self.infra_side.distance() > 50:
                 self.off_motors()
                 return True
-            elif(self.ultra_front_r.distance()<70):
+            elif self.ultra_front_r.distance() < 70:
                 self.off_motors()
                 return False
-
-    def find_duct(self):
-        lowest_ultra_value = 255
-        forward_velocity = max(60, 500 / self.stopwatch.time())
-        backward_velocity = min(-60, -500 / self.stopwatch.time())
-
-        self.motor_l.reset_angle(0)
-        self.motor_r.reset_angle(0)
-
-        self.stopwatch.reset()
-        while self.stopwatch.time() < 300:
-            wait(5)
-            self.motor_l.dc(forward_velocity)
-            self.motor_r.dc(backward_velocity)
-            prev_lowest_ultra_value = lowest_ultra_value
-            lowest_ultra_value = min(
-                lowest_ultra_value,
-                self.ultra_front_l.distance(),
-                self.ultra_front_r.distance(),
-            )
-            if prev_lowest_ultra_value != lowest_ultra_value:
-                escape_angle_l = self.motor_l.angle()
-                escape_angle_r = self.motor_r.angle()
-
-        self.stopwatch.reset()
-        while self.stopwatch.time() < 600:
-            wait(5)
-            self.motor_r.dc(forward_velocity)
-            self.motor_l.dc(backward_velocity)
-            prev_lowest_ultra_value = lowest_ultra_value
-            lowest_ultra_value = min(
-                lowest_ultra_value,
-                self.ultra_front_l.distance(),
-                self.ultra_front_r.distance(),
-            )
-            if prev_lowest_ultra_value != lowest_ultra_value:
-                escape_angle_l = self.motor_l.angle()
-                escape_angle_r = self.motor_r.angle()
-
-        self.stopwatch.reset()
-        while self.stopwatch.time() < 300:
-            wait(5)
-            self.motor_l.dc(forward_velocity)
-            self.motor_r.dc(backward_velocity)
-            prev_lowest_ultra_value = lowest_ultra_value
-            lowest_ultra_value = min(
-                lowest_ultra_value,
-                self.ultra_front_l.distance(),
-                self.ultra_front_r.distance(),
-            )
-            if prev_lowest_ultra_value != lowest_ultra_value:
-                escape_angle_l = self.motor_l.angle()
-                escape_angle_r = self.motor_r.angle()
-
-        target_angle_l = abs(self.motor_l.angle()) + escape_angle_l
-        target_angle_r = abs(self.motor_r.angle()) + escape_angle_r
-        self.motor_l.reset_angle(0)
-        self.motor_r.reset_angle(0)
-
-        if self.motor_l.angle() > escape_angle_l:
-            while (
-                abs(self.motor_l.angle()) < target_angle_l
-                or abs(self.motor_r.angle()) < target_angle_r
-            ):
-                print(abs(self.motor_l.angle()), abs(self.motor_r.angle()))
-                self.motor_r.dc(30)
-                self.motor_l.dc(-30)
-        else:
-            while (
-                abs(self.motor_l.angle()) < target_angle_l
-                or abs(self.motor_r.angle()) < target_angle_r
-            ):
-                self.motor_r.dc(-30)
-                self.motor_l.dc(30)
-
-        self.off_motors()
 
     def move_to_distance(
         self,
         distance: float,
         sensor: UltrasonicSensor,
-        pid=PIDValues(kp=0.8, ki=0.05),
+        pid=PIDValues(kp=1, ki=0.0001, kd=0.01),
         turning=0,
+        single_motor: Motor = None,
     ):
         """
         Se move até ler determinada distância com o sensor dado.
@@ -749,26 +676,64 @@ class Robot:
         - turning é um valor percentual (0 a 1) positivo ou negativo que
         representa o quanto a força será diferente entre dois motores, a fim de
         fazer uma curva.
+        - single_motor é um motor opcional caso queira executar o movimento apenas com o motor
+        desejado. Se não for passado, os dois motores básicos são usados por padrão.
         """
         diff = sensor.distance() - distance
         diff_i = 0
-        while abs(diff) >= 5:
-            ev3_print(sensor.distance(), diff, ev3=self.brick)
+        prev_diff = diff
+        while abs(diff) >= 1:
+            # ev3_print(diff, diff_i, ev3=self.brick)
             diff = sensor.distance() - distance
             diff_i += diff
+            diff_d = diff - prev_diff
 
-            pid_speed = diff * pid.kp + diff_i * pid.ki
-            pid_speed = min(pid_speed, 30)
-            pid_speed = max(pid_speed, -30)
+            pid_speed = diff * pid.kp + diff_i * pid.ki + diff_d * pid.kd
 
-            self.motor_l.dc(pid_speed * (1 + turning))
-            self.motor_r.dc(pid_speed * (1 - turning))
+            if pid_speed < 5:
+                break
+
+            ev3_print(pid_speed, ev3=self.brick)
+            if single_motor is None:
+                self.motor_l.dc(pid_speed * (1 + turning))
+                self.motor_r.dc(pid_speed * (1 - turning))
+            else:
+                single_motor.dc(pid_speed)
+        ev3_print(sensor.distance(), ev3=self.brick)
         self.off_motors()
+
+    def align_front_wall(self):
+        dist_right = self.ultra_front_r.distance()
+        dist_left = self.ultra_front_l.distance()
+
+        if dist_right > dist_left:
+            # O sensor da esquerda está mais perto
+            sensor_far = self.ultra_front_r
+            motor_far = self.motor_r
+            sensor_close = self.ultra_front_l
+            motor_close = self.motor_l
+        else:
+            # O sensor da direita está mais perto
+            sensor_far = self.ultra_front_l
+            motor_far = self.motor_l
+            sensor_close = self.ultra_front_r
+            motor_close = self.motor_r
+
+        sensor_far.distance(silent=True)  # silencia sensor que tá mais longe
+        self.move_to_distance(80, sensor=sensor_close)
+        sensor_close.distance(silent=True)  # silencia sensor mais perto
+        self.move_to_distance(80, sensor=sensor_far, single_motor=motor_far)
+        sensor_far.distance(silent=True)  # silencia sensor mais longe
+        self.move_to_distance(80, sensor=sensor_close, single_motor=motor_close)
 
     def hole_measurement(
         self,
-        vel = 50,
-        pid: PIDValues = PIDValues(target=20,kp=1,ki=0.1,kd=3,
+        vel=50,
+        pid: PIDValues = PIDValues(
+            target=20,
+            kp=1,
+            ki=0.1,
+            kd=3,
         ),
     ):
         pid.kp = 3
@@ -792,22 +757,29 @@ class Robot:
             prev_elapsed_time = elapsed_time
             wait(1)
             elapsed_time = self.stopwatch.time()
-            d_share = ((error - prev_error) * pid.kd) / (elapsed_time - prev_elapsed_time)
+            d_share = ((error - prev_error) * pid.kd) / (
+                elapsed_time - prev_elapsed_time
+            )
 
             pid_correction = p_share + i_share + d_share
             self.motor_r.dc(vel - pid_correction)
             self.motor_l.dc(vel + pid_correction)
         self.off_motors()
 
-        WHEEL_LENGTH = const.WHEEL_DIAMETER * math.pi  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
+        WHEEL_LENGTH = (
+            const.WHEEL_DIAMETER * math.pi
+        )  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
         degrees = (self.motor_l.angle() + self.motor_r.angle()) / 2
         return (degrees / 360) * WHEEL_LENGTH
 
     def walk_to_hole(
         self,
-        vel = 50,
-        mode = 1,
-        pid: PIDValues = PIDValues(kp=1,ki=0.1,kd=3,
+        vel=50,
+        mode=1,
+        pid: PIDValues = PIDValues(
+            kp=1,
+            ki=0.1,
+            kd=3,
         ),
     ):
         pid.kp = 3
@@ -820,8 +792,8 @@ class Robot:
         self.motor_l.reset_angle(0)
         self.motor_r.reset_angle(0)
         self.stopwatch.reset()
-        
-        if(mode==1):
+
+        if mode == 1:
             while self.infra_side.distance() > 25:
                 prev_error = error
                 error = self.motor_r.angle() - self.motor_l.angle()
@@ -833,13 +805,15 @@ class Robot:
                 prev_elapsed_time = elapsed_time
                 wait(1)
                 elapsed_time = self.stopwatch.time()
-                d_share = ((error - prev_error) * pid.kd) / (elapsed_time - prev_elapsed_time)
+                d_share = ((error - prev_error) * pid.kd) / (
+                    elapsed_time - prev_elapsed_time
+                )
 
                 pid_correction = p_share + i_share + d_share
                 self.motor_r.dc(-(vel + pid_correction))
                 self.motor_l.dc(-(vel - pid_correction))
-        
-        elif(mode==2):
+
+        elif mode == 2:
             while self.infra_side.distance() < 25:
                 prev_error = error
                 error = self.motor_r.angle() - self.motor_l.angle()
@@ -851,7 +825,9 @@ class Robot:
                 prev_elapsed_time = elapsed_time
                 wait(1)
                 elapsed_time = self.stopwatch.time()
-                d_share = ((error - prev_error) * pid.kd) / (elapsed_time - prev_elapsed_time)
+                d_share = ((error - prev_error) * pid.kd) / (
+                    elapsed_time - prev_elapsed_time
+                )
 
                 pid_correction = p_share + i_share + d_share
                 self.motor_r.dc(vel - pid_correction)
@@ -861,4 +837,3 @@ class Robot:
 
     def duct_part_identification(self):
         self.off_motors()
-
