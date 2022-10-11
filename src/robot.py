@@ -172,9 +172,9 @@ class Robot:
         self,
         angle,
         pid: PIDValues = PIDValues(
-            kp=1.5,
-            ki=0.01,
-            kd=2,
+            kp=1.8,
+            ki=2,
+            kd=2.2,
         ),
     ):
         """
@@ -190,38 +190,43 @@ class Robot:
         elapsed_time = 0
         i_share = 0.0
         error = 0
+        i = 0
 
         acceptable_degrees = const.PID_TURN_ACCEPTABLE_DEGREES_PERC * motor_degrees
-        # while abs(self.motor_l.angle()) <= abs(acceptable_degrees):
         while True:
             motor_angle_average = (self.motor_l.angle() - self.motor_r.angle()) / 2
             prev_error = error
             error = motor_degrees - motor_angle_average
             p_share = error * pid.kp
 
-            if abs(error) < 3:
+            if abs(error) < 20:
                 i_share = i_share + (error * pid.ki)
 
+            while(error<20):
+                i+=1
+                if(i>500):
+                    break
             prev_elapsed_time = elapsed_time
             wait(1)
             elapsed_time = self.stopwatch.time()
             d_share = ((error - prev_error) * pid.kd) / (elapsed_time - prev_elapsed_time)
 
             pid_correction = p_share + i_share + d_share
-            vel = 10 + pid_correction
+            vel = 20 + pid_correction
             if vel < 0:
-                vel = min(vel, -10)
+                vel = min(vel, -20)
             else:
-                vel = max(vel, 10)
+                vel = max(vel, 20)
             self.motor_r.dc(-vel)
             self.motor_l.dc(vel)
-            if(abs(self.motor_l.angle()) <= abs(acceptable_degrees) and angle>0):
+            target = (abs(self.motor_l.angle())+abs(self.motor_l.angle()))/2
+
+            if target >= abs(acceptable_degrees) and angle>0:
                 self.off_motors()
                 break  
-            elif(abs(self.motor_l.angle()) >= abs(acceptable_degrees) and angle<0):
+            elif target >= abs(acceptable_degrees) and angle<0:
                 self.off_motors()
                 break
-
 
     def simple_walk(self, cm, speed=50, speed_l=None, speed_r=None):
         """Movimentação simples"""
@@ -606,7 +611,8 @@ class Robot:
             if len(reads) > 2 and reads[-1] > reads[-2]:
                 # última leitura é maior que a penúltima
                 break
-        self.off_motors()
+        self.motor_l.hold()
+        self.motor_r.hold()
 
     def pid_wall_follower(
         self,
@@ -646,10 +652,11 @@ class Robot:
 
             self.motor_l.dc(speed + pid_speed)
             self.motor_r.dc(speed - pid_speed)
+
             if(self.infra_side.distance()>50):
                 self.off_motors()
                 return True
-            elif(self.ultra_front_r.distance()<50):
+            elif(self.ultra_front_r.distance()<70):
                 self.off_motors()
                 return False
 
@@ -852,14 +859,6 @@ class Robot:
 
         self.off_motors()
 
-    def wall_turn(
-        self
-    ):  
-
-        self.stopwatch.reset()
-        while(self.infra_side.distance()>5 and self.stopwatch.time()<1000):
-            self.motor_l.dc(75)
-            self.motor_r.dc(25)
-        self.pid_accelerated_walk(time=500,mode=2)
-
+    def duct_part_identification(self):
+        self.off_motors()
 

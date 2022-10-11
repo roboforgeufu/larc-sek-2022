@@ -116,14 +116,20 @@ def testing_duct_turn():
         infra_side=Port.S3,
         ultra_front_r=Port.S4,
     )
-
-    boolean = toph.pid_wall_follower()
-    if boolean:
-        toph.wall_turn()
-        toph.pid_accelerated_walk(time=500,mode=2)
-    else:
-        toph.pid_turn(-90)
-    toph.pid_wall_follower()
+    
+    toph.move_to_distance(distance=100,sensor=toph.ultra_front_r)
+    toph.pid_turn(-90)
+    while True:
+        toph.wall_aligner(speed=20)
+        boolean = toph.pid_wall_follower()
+        if boolean:
+            toph.walk_to_hole(mode=2)
+            toph.pid_walk(vel=-50,cm=5)
+            toph.pid_walk(vel=50,cm=15)
+            toph.pid_turn(90)
+            toph.pid_walk(vel=50,cm=20)
+        else:
+            toph.pid_turn(-90)
 
 def testing_duct_measurement():
     toph = Robot(
