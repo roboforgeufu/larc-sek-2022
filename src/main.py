@@ -184,17 +184,26 @@ def testing_duct_seek_routine():
         ultra_front_l=Port.S3,
         ultra_front_r=Port.S4,
     )
+
+    find_duct(katara)
+    time.sleep(10)
+    katara.ultra_front_l.distance()
+    katara.ultra_front_r.distance()
+
     katara.align_front_wall()
     katara.brick.speaker.beep()
     time.sleep(1)
     duct_ends(katara)
     katara.brick.speaker.beep()
     time.sleep(1)
-    duct_ends(katara, dir_sign=-1)
+    dist = duct_ends(katara, dir_sign=-1)
+    # katara.pid_turn(dist/2)
+
     katara.brick.speaker.beep()
 
     katara.ultra_front_l.distance()
     katara.ultra_front_r.distance()
+
     return None
 
 
@@ -267,6 +276,5 @@ def log_reading_ultra_front():
         sum(ml_angle for _, ml_angle, _ in close_reads) / len(close_reads),
     )
 
-
 if __name__ == "__main__":
-    log_reading_ultra_front()
+    testing_duct_seek_routine()
