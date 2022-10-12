@@ -621,6 +621,47 @@ class Robot:
                 break
         self.off_motors()
 
+    def wall_following_turn(
+        self, high_speed=40, low_speed=15, flw_distance=7, max_turning_angle=500
+    ):
+        """
+        Faz uma curva pra "dentro" enquanto seguindo a parede.
+
+        Feita pensando em ser usada em conjunto com a `pid_wall_follower`.
+        """
+        initial_turning_angle = 0
+        while True:
+            self.ev3_print(self.infra_side.distance())
+            self.motor_l.dc(high_speed)
+            if self.infra_side.distance() > flw_distance:
+                # Perdeu a parede
+                # Desacelera um dos motores pra fazer curva
+                self.motor_r.dc(low_speed)
+                if initial_turning_angle == 0:
+                    # Se ainda não estava "contando" angulos da curva
+                    # A partir daqui, passa a contar (guarda o inicial)
+                    initial_turning_angle = self.motor_l.angle()
+                elif self.motor_l.angle() - initial_turning_angle > max_turning_angle:
+                    # Já estava contando angulos da curva (initial_turning_angle != 0),
+                    # e o robô excedeu o limite dado
+                    # Pode terminar a operação
+                    break
+                else:
+                    # Apenas para logs (durante a curva)
+                    # self.ev3_print(self.motor_l.angle() - initial_turning_angle)
+                    pass
+            else:
+                # Mantem os dois motores na mesma velocidade
+                self.motor_r.dc(high_speed)
+
+        while self.infra_side.distance() > 20:
+            self.ev3_print(self.infra_side.distance())
+            # Vai pra frente enquanto não ver parede só pra garantir que vai
+            # terminar com o sensor vendo ela.
+            self.motor_l.dc(high_speed)
+            self.motor_r.dc(high_speed)
+        self.off_motors()
+
     def pid_wall_follower(
         self,
         speed=50,
@@ -843,4 +884,3 @@ class Robot:
                 self.motor_l.dc(vel + pid_correction)
 
         self.off_motors()
-

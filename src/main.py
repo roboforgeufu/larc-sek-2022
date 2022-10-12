@@ -291,22 +291,11 @@ def test_wall_aligner():
     )
 
     toph.pid_wall_follower(front_sensor=toph.ultra_front)
+    toph.wall_following_turn()
+    toph.pid_walk(7)
+    toph.pid_wall_follower(front_sensor=toph.ultra_front)
     toph.off_motors()
-
-    stage = 1
-    while True:
-        toph.motor_l.dc(40)
-        if stage == 2 and toph.infra_side.distance() > 7:
-            toph.motor_r.dc(40)
-        elif stage == 2:
-            stage = 1
-        elif stage == 1 and toph.infra_side.distance() > 7:
-            toph.motor_r.dc(20)
-            if stage == 1:
-                stage = 2
-        else:
-            toph.motor_r.dc(40)
 
 
 if __name__ == "__main__":
-    testing_duct_seek_routine()
+    test_wall_aligner()
