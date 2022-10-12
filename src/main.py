@@ -37,7 +37,7 @@ from domain.localization import (
     water_position_routine,
 )
 from robot import Robot
-from utils import ev3_print, get_hostname
+from utils import PIDValues, ev3_print, get_hostname
 
 
 def water_main(katara: Robot):
@@ -268,5 +268,36 @@ def log_reading_ultra_front():
     )
 
 
+def test_wall_aligner():
+    toph = Robot(
+        wheel_diameter=const.WHEEL_DIAMETER,
+        wheel_distance=const.WHEEL_DIST,
+        motor_r=Port.C,
+        motor_l=Port.B,
+        motor_claw=Port.A,
+        # color_l=Port.S1,
+        # color_r=Port.S2,
+        infra_side=Port.S3,
+        ultra_front=Port.S4,
+    )
+
+    toph.pid_wall_follower(front_sensor=toph.ultra_front)
+    toph.off_motors()
+
+    stage = 1
+    while True:
+        toph.motor_l.dc(40)
+        if stage == 2 and toph.infra_side.distance() > 7:
+            toph.motor_r.dc(40)
+        elif stage == 2:
+            stage = 1
+        elif stage == 1 and toph.infra_side.distance() > 7:
+            toph.motor_r.dc(20)
+            if stage == 1:
+                stage = 2
+        else:
+            toph.motor_r.dc(40)
+
+
 if __name__ == "__main__":
-    log_reading_ultra_front()
+    test_wall_aligner()

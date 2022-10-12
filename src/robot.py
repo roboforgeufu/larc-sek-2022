@@ -100,6 +100,13 @@ class Robot:
         self.motor_l.dc(0)
         self.motor_r.dc(0)
 
+    def ev3_print(self, *args, **kwargs):
+        """
+        Métodos para logs.
+        """
+        self.brick.screen.print(*args, **kwargs)
+        print(*args, **kwargs)
+
     def forward_while_same_reflection(
         self,
         speed_r=50,
@@ -224,11 +231,10 @@ class Robot:
             target = (abs(self.motor_l.angle()) + abs(self.motor_l.angle())) / 2
 
             if target >= abs(acceptable_degrees) and angle > 0:
-                self.off_motors()
                 break
             elif target >= abs(acceptable_degrees) and angle < 0:
-                self.off_motors()
                 break
+        self.off_motors()
 
     def simple_walk(self, cm, speed=50, speed_l=None, speed_r=None):
         """Movimentação simples"""
@@ -613,12 +619,12 @@ class Robot:
             if len(reads) > 2 and reads[-1] > reads[-2]:
                 # última leitura é maior que a penúltima
                 break
-        self.motor_l.hold()
-        self.motor_r.hold()
+        self.off_motors()
 
     def pid_wall_follower(
         self,
         speed=50,
+        front_sensor=None,
         pid: PIDValues = PIDValues(
             target=5,
             kp=0.8,
@@ -627,6 +633,9 @@ class Robot:
         ),
     ):
         """Seguidor de parede com controle PID simples."""
+        if front_sensor is None:
+            front_sensor = self.ultra_front_r
+
         motor_error_i = 0
         prev_motor_error = 0
 
@@ -658,7 +667,7 @@ class Robot:
             if self.infra_side.distance() > 50:
                 self.off_motors()
                 return True
-            elif self.ultra_front_r.distance() < 70:
+            elif front_sensor.distance() < 70:
                 self.off_motors()
                 return False
 
@@ -683,17 +692,17 @@ class Robot:
         diff_i = 0
         prev_diff = diff
         while abs(diff) >= 1:
-            # ev3_print(diff, diff_i, ev3=self.brick)
             diff = sensor.distance() - distance
             diff_i += diff
             diff_d = diff - prev_diff
+            # ev3_print(diff, diff_i, diff_d, ev3=self.brick)
 
             pid_speed = diff * pid.kp + diff_i * pid.ki + diff_d * pid.kd
 
             if pid_speed < 5:
                 break
 
-            ev3_print(pid_speed, ev3=self.brick)
+            # ev3_print(pid_speed, ev3=self.brick)
             if single_motor is None:
                 self.motor_l.dc(pid_speed * (1 + turning))
                 self.motor_r.dc(pid_speed * (1 - turning))
