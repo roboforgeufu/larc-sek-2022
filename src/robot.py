@@ -178,6 +178,7 @@ class Robot:
     def pid_turn(
         self,
         angle,
+        mode=1,
         pid: PIDValues = PIDValues(
             kp=1.8,
             ki=2,
@@ -189,7 +190,10 @@ class Robot:
         - Angulo relativo ao eixo do robô.
         - angle positivo: direita, negativo: esquerda
         """
-        motor_degrees = self.robot_axis_to_motor_degrees(angle)
+        if mode == 1:
+            motor_degrees = self.robot_axis_to_motor_degrees(angle)
+        if mode == 2:
+            motor_degrees = angle
 
         self.motor_l.reset_angle(0)
         self.motor_r.reset_angle(0)
@@ -753,6 +757,8 @@ class Robot:
         self.off_motors()
 
     def align_front_wall(self):
+        self.ultra_front_r.distance()
+        self.ultra_front_l.distance()
         dist_right = self.ultra_front_r.distance()
         dist_left = self.ultra_front_l.distance()
 
@@ -769,12 +775,12 @@ class Robot:
             sensor_close = self.ultra_front_r
             motor_close = self.motor_r
 
-        sensor_far.distance(silent=True)  # silencia sensor que tá mais longe
-        self.move_to_distance(80, sensor=sensor_close)
-        sensor_close.distance(silent=True)  # silencia sensor mais perto
-        self.move_to_distance(80, sensor=sensor_far, single_motor=motor_far)
-        sensor_far.distance(silent=True)  # silencia sensor mais longe
-        self.move_to_distance(80, sensor=sensor_close, single_motor=motor_close)
+        # sensor_far.distance(silent=True)  # silencia sensor que tá mais longe
+        self.move_to_distance(60, sensor=sensor_close)
+        # sensor_close.distance(silent=True)  # silencia sensor mais perto
+        self.move_to_distance(60, sensor=sensor_far, single_motor=motor_far)
+        # sensor_far.distance(silent=True)  # silencia sensor mais longe
+        self.move_to_distance(60, sensor=sensor_close, single_motor=motor_close)
 
     def hole_measurement(
         self,

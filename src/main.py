@@ -182,27 +182,32 @@ def testing_duct_seek_routine():
         motor_r=Port.C,
         motor_l=Port.B,
         ultra_front_l=Port.S3,
-        ultra_front_r=Port.S4,
+        # ultra_front_r=Port.S4,
+        color_l=Port.S1,
+        color_r=Port.S2,
     )
 
-    find_duct(katara)
-    time.sleep(10)
-    katara.ultra_front_l.distance()
-    katara.ultra_front_r.distance()
+    land_position_routine(katara)
+    katara.pid_turn(-90)
+    duct_found = find_duct(katara)
+    if not duct_found:
+        katara.off_motors()
+    else:    
+        dist = duct_ends(katara)
+        time.sleep(1)
+        katara.pid_turn(dist,mode=2)
+        time.sleep(1)
+        katara.pid_walk(cm=(duct_found/15),vel=50)
+        time.sleep(1)
+        dist = duct_ends(katara)
+        time.sleep(1)
+        katara.pid_turn(dist,mode=2)
+        u_mean = katara.ultra_front_l.distance()
+        while(u_mean<1200):
+            katara.motor_l.dc(30)
+            katara.motor_l.dc(-30)
 
-    katara.align_front_wall()
-    katara.brick.speaker.beep()
-    time.sleep(1)
-    duct_ends(katara)
-    katara.brick.speaker.beep()
-    time.sleep(1)
-    dist = duct_ends(katara, dir_sign=-1)
-    # katara.pid_turn(dist/2)
-
-    katara.brick.speaker.beep()
-
-    katara.ultra_front_l.distance()
-    katara.ultra_front_r.distance()
+    katara.off_motors()
 
     return None
 
@@ -298,4 +303,4 @@ def test_wall_aligner():
 
 
 if __name__ == "__main__":
-    test_wall_aligner()
+    testing_duct_seek_routine()
