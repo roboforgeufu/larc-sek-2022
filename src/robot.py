@@ -125,6 +125,9 @@ class Robot:
         while not stopped_l or not stopped_r:
             diff_ref_r = self.color_r.reflection() - starting_ref_r
             diff_ref_l = self.color_l.reflection() - starting_ref_l
+
+            self.ev3_print(diff_ref_l, diff_ref_r)
+
             if abs(diff_ref_r) < reflection_diff:
                 self.motor_r.dc(speed_r)
             else:
@@ -701,20 +704,26 @@ class Robot:
                 pid.kp * motor_error + pid.ki * motor_error_i + pid.kd * motor_error_d
             )
 
-            ev3_print(
-                dist_diff,
-                ev3=self.brick,
-            )
+            ev3_print(motor_error, motor_error_i, motor_error_d, ev3=self.brick)
 
-            self.motor_l.dc(speed + pid_speed)
-            self.motor_r.dc(speed - pid_speed)
+            if self.color_l.reflection() >= 5:
+                self.motor_l.dc(speed + pid_speed)
+            else:
+                self.motor_l.dc(0)
 
-            if self.infra_side.distance() > 50:
+            if self.color_r.reflection() >= 5:
+                self.motor_r.dc(speed - pid_speed)
+            else:
+                self.motor_r.dc(0)
+
+            if abs(motor_error) > 100 and abs(motor_error_d) > 60:
                 self.off_motors()
-                return True
-            elif front_sensor.distance() < 70:
+                return 1
+            elif front_sensor.distance() < 100:
                 self.off_motors()
-                return False
+                return 2
+            elif self.color_l.reflection() < 5 and self.color_r.reflection() < 5:
+                return 3
 
     def move_to_distance(
         self,
@@ -744,10 +753,10 @@ class Robot:
 
             pid_speed = diff * pid.kp + diff_i * pid.ki + diff_d * pid.kd
 
-            if pid_speed < 5:
+            if pid_speed < 10:
                 break
 
-            # ev3_print(pid_speed, ev3=self.brick)
+            ev3_print(pid_speed, ev3=self.brick)
             if single_motor is None:
                 self.motor_l.dc(pid_speed * (1 + turning))
                 self.motor_r.dc(pid_speed * (1 - turning))
