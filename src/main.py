@@ -31,6 +31,7 @@ from pybricks.tools import DataLog
 
 import constants as const
 from domain.collect import align_duct_center, duct_ends, find_duct
+from domain.gas_duct import gas_duct_routine
 from domain.localization import (
     check_land_position_by_color,
     land_position_routine,
@@ -56,7 +57,7 @@ def water_main(katara: Robot):
     start = logic_mbox.read()
     ev3_print(start, ev3=katara.brick)
     if start:
-        # water_position_routine(katara)
+        water_position_routine(katara)
         logic_mbox.send(True)
 
 
@@ -277,25 +278,21 @@ def log_reading_ultra_front():
     )
 
 
-def test_wall_aligner():
+def test_duct_routine():
     toph = Robot(
         wheel_diameter=const.WHEEL_DIAMETER,
         wheel_distance=const.WHEEL_DIST,
         motor_r=Port.C,
         motor_l=Port.B,
         motor_claw=Port.A,
-        # color_l=Port.S1,
-        # color_r=Port.S2,
+        color_l=Port.S1,
+        color_r=Port.S2,
         infra_side=Port.S3,
         ultra_front=Port.S4,
     )
 
-    toph.pid_wall_follower(front_sensor=toph.ultra_front)
-    toph.wall_following_turn()
-    toph.pid_walk(7)
-    toph.pid_wall_follower(front_sensor=toph.ultra_front)
-    toph.off_motors()
+    gas_duct_routine(toph)
 
 
 if __name__ == "__main__":
-    test_wall_aligner()
+    test_duct_routine()
