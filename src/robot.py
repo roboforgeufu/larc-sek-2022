@@ -844,5 +844,3 @@ class Robot:
 
         self.off_motors()
 
-    def duct_part_identification(self):
-        self.off_motors()
