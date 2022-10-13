@@ -38,7 +38,7 @@ from domain.localization import (
     water_position_routine,
 )
 from robot import Robot
-from utils import PIDValues, ev3_print, get_hostname
+from utils import PIDValues, ev3_print, get_hostname, wait_button_pressed
 
 
 def water_main(katara: Robot):
@@ -180,35 +180,40 @@ def testing_duct_seek_routine():
     katara = Robot(
         wheel_diameter=const.WHEEL_DIAMETER,
         wheel_distance=const.WHEEL_DIST,
+        motor_claw=Port.A,
         motor_r=Port.C,
         motor_l=Port.B,
-        ultra_front_l=Port.S3,
-        # ultra_front_r=Port.S4,
-        color_l=Port.S1,
-        color_r=Port.S2,
+        # ultra_front_l=Port.S3,
+        ultra_front_r=Port.S4,
+        # color_l=Port.S1,
+        # color_r=Port.S2,
     )
 
-    land_position_routine(katara)
-    katara.pid_turn(-90)
+    # land_position_routine(katara)
+    # katara.pid_turn(-90)
+
+    
+
     duct_found = find_duct(katara)
+    wait_button_pressed(katara.brick)
     if not duct_found:
         katara.off_motors()
     else:
-        dist = duct_ends(katara)
-        time.sleep(1)
-        katara.pid_turn(dist, mode=2)
-        time.sleep(1)
-        katara.pid_walk(cm=(duct_found / 15), vel=50)
-        time.sleep(1)
-        dist = duct_ends(katara)
-        time.sleep(1)
-        katara.pid_turn(dist, mode=2)
-        u_mean = katara.ultra_front_l.distance()
-        while u_mean < 1200:
-            katara.motor_l.dc(30)
-            katara.motor_l.dc(-30)
+        katara.min_aligner(katara.ultra_front_r.distance)
+        wait_button_pressed(katara.brick)
 
-    katara.off_motors()
+        katara.pid_walk(cm=(duct_found/10)-5, vel=50)
+        wait_button_pressed(katara.brick)
+
+        katara.min_aligner(katara.ultra_front_r.distance)
+        wait_button_pressed(katara.brick)
+
+        katara.pid_walk(cm=5, vel=30)
+
+        katara.off_motors()
+        katara.motor_claw.reset_angle(0)
+        katara.motor_claw.run_target(300,300)
+        katara.motor_claw.run_target(300,0)
 
     return None
 
@@ -235,4 +240,4 @@ def test_gas_duct_routine():
 
 
 if __name__ == "__main__":
-    test_gas_duct_routine()
+    testing_duct_seek_routine()
