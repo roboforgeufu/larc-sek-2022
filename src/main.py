@@ -227,7 +227,11 @@ def test_gas_duct_routine():
         debug=True,
     )
 
-    gas_duct_routine(toph)
+    # gas_duct_routine(toph)
+
+    toph.pid_turn(90)
+    # time.sleep(1)
+    # toph.pid_turn(-90)
 
 
 if __name__ == "__main__":

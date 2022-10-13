@@ -256,68 +256,89 @@ class Robot:
         angle,
         mode=1,
         pid: PIDValues = PIDValues(
-            kp=1.8,
-            ki=2,
-            kd=2.2,
+            kp=2,
+            ki=0,
+            kd=0.5,
         ),
     ):
         """
         Curva com controle PID.
         - Angulo relativo ao eixo do robô.
-        - angle positivo: direita, negativo: esquerda
         - Modos(mode):
             - 1: usa o valor dado como ângulo ao redor do eixo do robô
             - 2: usa o valor dado como ângulo no eixo das rodas
         """
+        self.ev3_print(self.pid_turn.__name__)
+
         if mode == 1:
             motor_degrees = self.robot_axis_to_motor_degrees(angle)
         if mode == 2:
             motor_degrees = angle
 
-        self.motor_l.reset_angle(0)
-        self.motor_r.reset_angle(0)
+        initial_angle_l = self.motor_l.angle()
+        initial_angle_r = self.motor_r.angle()
 
-        elapsed_time = 0
-        i_share = 0.0
-        error = 0
-        i = 0
+        target_angle_r = initial_angle_l - motor_degrees
+        target_angle_l = initial_angle_r + motor_degrees
 
-        acceptable_degrees = const.PID_TURN_ACCEPTABLE_DEGREES_PERC * motor_degrees
-        while True:
-            motor_angle_average = (self.motor_l.angle() - self.motor_r.angle()) / 2
-            prev_error = error
-            error = motor_degrees - motor_angle_average
-            p_share = error * pid.kp
+        self.ev3_print("TARGET:", target_angle_l, target_angle_r)
 
-            if abs(error) < 20:
-                i_share = i_share + (error * pid.ki)
+        left_error = target_angle_l - self.motor_l.angle()
+        right_error = target_angle_r - self.motor_r.angle()
 
-            while error < 20:
-                i += 1
-                if i > 500:
-                    break
-            prev_elapsed_time = elapsed_time
-            wait(1)
-            elapsed_time = self.stopwatch.time()
-            d_share = ((error - prev_error) * pid.kd) / (
-                elapsed_time - prev_elapsed_time
+        left_error_i = 0
+        right_error_i = 0
+
+        left_prev_error = left_error
+        right_prev_error = right_error
+
+        n = 0
+        while (
+            abs(self.motor_l.angle() - target_angle_l) > 1
+            or abs(self.motor_r.angle() - target_angle_r) > 1
+        ):
+            n += 1
+            left_error = target_angle_l - self.motor_l.angle()
+            right_error = target_angle_r - self.motor_r.angle()
+
+            if abs(left_error) < 30:
+                left_error_i += left_error
+            if abs(right_error) < 30:
+                right_error_i += right_error
+
+            left_error_d = left_prev_error - left_error
+            right_error_d = right_prev_error - right_error
+
+            left_prev_error = left_error
+            right_prev_error = right_error
+
+            left_pid_speed = (
+                pid.kp * left_error + pid.ki * left_error_i + pid.kd * left_error_d
+            )
+            right_pid_speed = (
+                pid.kp * right_error + pid.ki * right_error_i + pid.kd * right_error_d
+            )
+            self.ev3_print(
+                self.motor_r.angle(),
+                self.motor_l.angle(),
+                "|",
+                left_error,
+                left_error_i,
+                left_error_d,
+                left_pid_speed,
             )
 
-            pid_correction = p_share + i_share + d_share
-            vel = 20 + pid_correction
-            if vel < 0:
-                vel = min(vel, -20)
-            else:
-                vel = max(vel, 20)
-            self.motor_r.dc(-vel)
-            self.motor_l.dc(vel)
-            target = (abs(self.motor_l.angle()) + abs(self.motor_l.angle())) / 2
+            # Limitante de velocidade
+            left_speed_sign = -1 if left_pid_speed < 0 else 1
+            left_pid_speed = min(75, abs(left_pid_speed)) * left_speed_sign
+            right_speed_sign = -1 if right_pid_speed < 0 else 1
+            right_pid_speed = min(75, abs(right_pid_speed)) * right_speed_sign
 
-            if target >= abs(acceptable_degrees) and angle > 0:
-                break
-            elif target >= abs(acceptable_degrees) and angle < 0:
-                break
+            self.motor_l.dc(left_pid_speed)
+            self.motor_r.dc(right_pid_speed)
+
         self.off_motors()
+        self.ev3_print(n, "| END:", self.motor_l.angle(), self.motor_r.angle())
 
     def simple_walk(self, cm, speed=50, speed_l=None, speed_r=None):
         """Movimentação simples"""
@@ -733,8 +754,8 @@ class Robot:
         self,
         speed=50,
         front_sensor=None,
+        side_dist=const.WALL_FOLLOWER_SIDE_DIST,
         pid: PIDValues = PIDValues(
-            target=5,
             kp=0.8,
             ki=0.001,
             kd=1,
@@ -755,7 +776,7 @@ class Robot:
         while True:
             motor_diff = self.motor_r.angle() - self.motor_l.angle()
 
-            dist_diff = self.infra_side.distance() - pid.target
+            dist_diff = self.infra_side.distance() - side_dist
 
             motor_error = motor_diff + (20 * dist_diff)
             motor_error_i += motor_error
@@ -779,13 +800,16 @@ class Robot:
                 self.motor_r.dc(0)
 
             if abs(motor_error) > 100 and abs(motor_error_d) > 60:
-                self.off_motors()
-                return 1
+                return_value = 1
+                break
             elif front_sensor.distance() < 100:
-                self.off_motors()
-                return 2
+                return_value = 2
+                break
             elif self.color_l.reflection() < 5 and self.color_r.reflection() < 5:
-                return 3
+                return_value = 3
+                break
+        self.off_motors()
+        return return_value
 
     def move_to_distance(
         self,
@@ -817,7 +841,7 @@ class Robot:
 
             pid_speed = diff * pid.kp + diff_i * pid.ki + diff_d * pid.kd
 
-            if pid_speed < 10:
+            if abs(pid_speed) < 10:
                 break
 
             self.ev3_print(pid_speed)
