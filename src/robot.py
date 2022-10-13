@@ -17,7 +17,7 @@ from pybricks.parameters import Color, Port
 from pybricks.tools import StopWatch, wait
 
 import constants as const
-from utils import PIDValues, ev3_print
+from utils import PIDValues, wait_button_pressed
 
 
 class Robot:
@@ -42,6 +42,7 @@ class Robot:
         ultra_front_r: Port = None,
         color_r: Port = None,
         color_l: Port = None,
+        debug: bool = False,
     ) -> None:
         # Brick EV3
         self.brick = EV3Brick()
@@ -52,6 +53,9 @@ class Robot:
 
         # Cronometro
         self.stopwatch = StopWatch()
+
+        # Debug
+        self.debug = debug
 
         # Motores
         if motor_r is not None:
@@ -104,8 +108,9 @@ class Robot:
         """
         Métodos para logs.
         """
-        self.brick.screen.print(*args, **kwargs)
-        print(*args, **kwargs)
+        if self.debug:
+            self.brick.screen.print(*args, **kwargs)
+            print(*args, **kwargs)
 
     def forward_while_same_reflection(
         self,
@@ -117,6 +122,8 @@ class Robot:
         Move ambos os motores (de forma individual) até que a intensidade de reflexão
         mude o suficiente (`reflection_diff`)
         """
+        self.ev3_print(self.forward_while_same_reflection.__name__)
+
         starting_ref_r = self.color_r.reflection()
         starting_ref_l = self.color_l.reflection()
 
@@ -314,21 +321,34 @@ class Robot:
 
     def simple_walk(self, cm, speed=50, speed_l=None, speed_r=None):
         """Movimentação simples"""
+        dir_sign = 1 if cm > 0 else -1
+
+        speed = abs(speed)
         if speed_l is None:
             speed_l = speed
         if speed_r is None:
             speed_r = speed
+        speed_l = abs(speed_l)
+        speed_r = abs(speed_r)
 
         degrees = self.cm_to_motor_degrees(cm)
 
         initial_angle_l = self.motor_l.angle()
         initial_angle_r = self.motor_r.angle()
 
-        while abs(initial_angle_l - self.motor_l.angle()) < abs(degrees) and abs(
+        while abs(initial_angle_l - self.motor_l.angle()) < abs(degrees) or abs(
             initial_angle_r - self.motor_r.angle()
         ) < abs(degrees):
-            self.motor_r.dc(speed_r)
-            self.motor_l.dc(speed_l)
+            if abs(initial_angle_l - self.motor_l.angle()) < abs(degrees):
+                self.motor_l.dc(speed_l * dir_sign)
+            else:
+                self.motor_l.dc(0)
+
+            if abs(initial_angle_r - self.motor_r.angle()) < abs(degrees):
+                self.motor_r.dc(speed_l * dir_sign)
+            else:
+                self.motor_r.dc(0)
+        self.off_motors()
 
     def pid_walk(
         self,
@@ -674,6 +694,8 @@ class Robot:
 
         Feita pensando em ser usada em conjunto com a `pid_wall_follower`.
         """
+        self.ev3_print(self.wall_following_turn.__name__)
+
         initial_turning_angle = 0
         while True:
             self.ev3_print(self.infra_side.distance())
@@ -719,6 +741,8 @@ class Robot:
         ),
     ):
         """Seguidor de parede com controle PID simples."""
+        self.ev3_print(self.pid_wall_follower.__name__)
+
         if front_sensor is None:
             front_sensor = self.ultra_front_r
 
@@ -742,7 +766,7 @@ class Robot:
                 pid.kp * motor_error + pid.ki * motor_error_i + pid.kd * motor_error_d
             )
 
-            ev3_print(motor_error, motor_error_i, motor_error_d, ev3=self.brick)
+            self.ev3_print(motor_error, motor_error_i, motor_error_d)
 
             if self.color_l.reflection() >= 5:
                 self.motor_l.dc(speed + pid_speed)
@@ -780,6 +804,8 @@ class Robot:
         - single_motor é um motor opcional caso queira executar o movimento apenas com o motor
         desejado. Se não for passado, os dois motores básicos são usados por padrão.
         """
+        self.ev3_print(self.move_to_distance.__name__)
+
         diff = sensor.distance() - distance
         diff_i = 0
         prev_diff = diff
@@ -794,13 +820,13 @@ class Robot:
             if pid_speed < 10:
                 break
 
-            ev3_print(pid_speed, ev3=self.brick)
+            self.ev3_print(pid_speed)
             if single_motor is None:
                 self.motor_l.dc(pid_speed * (1 + turning))
                 self.motor_r.dc(pid_speed * (1 - turning))
             else:
                 single_motor.dc(pid_speed)
-        ev3_print(sensor.distance(), ev3=self.brick)
+        self.ev3_print(sensor.distance())
         self.off_motors()
 
     def align_front_wall(self):

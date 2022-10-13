@@ -213,7 +213,7 @@ def testing_duct_seek_routine():
     return None
 
 
-def test_wall_aligner():
+def test_gas_duct_routine():
     toph = Robot(
         wheel_diameter=const.WHEEL_DIAMETER,
         wheel_distance=const.WHEEL_DIST,
@@ -224,10 +224,11 @@ def test_wall_aligner():
         color_r=Port.S2,
         infra_side=Port.S3,
         ultra_front=Port.S4,
+        debug=True,
     )
 
-    toph.min_aligner(toph.infra_side.distance)
+    gas_duct_routine(toph)
 
 
 if __name__ == "__main__":
-    test_wall_aligner()
+    test_gas_duct_routine()
