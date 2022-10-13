@@ -624,41 +624,6 @@ class Robot:
 
         return array
 
-    def pid_align_wall(
-        self,
-        pid: PIDValues = PIDValues(target=100, kp=0.3, ki=0.001, kd=0.4),
-    ):
-
-        i_share = 0
-        elapsed_time = 0
-        error = 0
-        self.stopwatch.reset()
-        self.motor_l.reset_angle(0)
-        self.motor_r.reset_angle(0)
-        while True:
-
-            prev_error = error
-            error = self.ultra_front_l.distance() - self.ultra_front_r.distance()
-            p_share = error * pid.kp
-            print(error)
-            if abs(error) < 10:
-                i_share = i_share + (error * pid.ki)
-
-            prev_elapsed_time = elapsed_time
-            wait(1)
-            elapsed_time = self.stopwatch.time()
-
-            d_share = ((error - prev_error) * pid.kd) / (
-                elapsed_time - prev_elapsed_time
-            )
-
-            pid_correction = p_share + i_share + d_share
-
-            self.motor_r.dc(-10 - pid_correction)
-            self.motor_l.dc(10 + pid_correction)
-
-        self.off_motors()
-
     def min_aligner(self, min_function, speed: int = 40, max_angle=90):
         """
         Alinha os motores usando o mínimo de uma função como alvo.
