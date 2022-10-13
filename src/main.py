@@ -193,18 +193,18 @@ def testing_duct_seek_routine():
     duct_found = find_duct(katara)
     if not duct_found:
         katara.off_motors()
-    else:    
+    else:
         dist = duct_ends(katara)
         time.sleep(1)
-        katara.pid_turn(dist,mode=2)
+        katara.pid_turn(dist, mode=2)
         time.sleep(1)
-        katara.pid_walk(cm=(duct_found/15),vel=50)
+        katara.pid_walk(cm=(duct_found / 15), vel=50)
         time.sleep(1)
         dist = duct_ends(katara)
         time.sleep(1)
-        katara.pid_turn(dist,mode=2)
+        katara.pid_turn(dist, mode=2)
         u_mean = katara.ultra_front_l.distance()
-        while(u_mean<1200):
+        while u_mean < 1200:
             katara.motor_l.dc(30)
             katara.motor_l.dc(-30)
 
@@ -213,77 +213,7 @@ def testing_duct_seek_routine():
     return None
 
 
-def log_reading_ultra_front():
-    katara = Robot(
-        wheel_diameter=const.WHEEL_DIAMETER,
-        wheel_distance=const.WHEEL_DIST,
-        motor_r=Port.C,
-        motor_l=Port.B,
-        color_l=Port.S1,
-        color_r=Port.S2,
-        ultra_front_l=Port.S3,
-        ultra_front_r=Port.S4,
-    )
-    logger = DataLog("L", "R", "motor_r", "motor_l", name="log_reading_ultra_front")
-
-    max_degrees = 500
-
-    ultra_reads_r = []
-    # katara.ultra_front_r.distance(silent=True)
-    while abs(katara.motor_r.angle()) < max_degrees:
-        logger.log(
-            katara.ultra_front_l.distance(),
-            katara.ultra_front_r.distance(),
-            katara.motor_r.angle(),
-            katara.motor_l.angle(),
-        )
-        ultra_reads_r.append(
-            (
-                katara.motor_r.angle(),
-                katara.motor_l.angle(),
-                katara.ultra_front_r.distance(),
-            )
-        )
-
-        katara.motor_r.dc(-20)
-        katara.motor_l.dc(20)
-    katara.off_motors()
-
-    # Pega menor leitura do ultrassonico
-    min_read = min(u_read for _, _, u_read in ultra_reads_r)
-    mean_read_half = (
-        sum(u_read for _, _, u_read in ultra_reads_r) / len(ultra_reads_r)
-    ) / 2
-    interval_range = range(min_read, int(mean_read_half) + 1)
-    print("interval_range:", interval_range)
-
-    close_reads = [read for read in ultra_reads_r if read[2] in interval_range]
-
-    print("==========================")
-    print("ultra_reads_r")
-    for e in ultra_reads_r:
-        print(e)
-    print("==========================")
-    print("close_reads")
-    for e in close_reads:
-        print(e)
-    print("==========================")
-    print("close_reads proportion:", len(close_reads) / len(ultra_reads_r))
-    print(
-        "close_reads mean:",
-        sum(u_read for _, _, u_read in close_reads) / len(close_reads),
-    )
-    print(
-        "close_reads motor_r mean:",
-        sum(mr_angle for mr_angle, _, _ in close_reads) / len(close_reads),
-    )
-    print(
-        "close_reads motor_l mean:",
-        sum(ml_angle for _, ml_angle, _ in close_reads) / len(close_reads),
-    )
-
-
-def test_duct_routine():
+def test_wall_aligner():
     toph = Robot(
         wheel_diameter=const.WHEEL_DIAMETER,
         wheel_distance=const.WHEEL_DIST,
@@ -296,8 +226,8 @@ def test_duct_routine():
         ultra_front=Port.S4,
     )
 
-    gas_duct_routine(toph)
+    toph.min_aligner(toph.infra_side.distance)
 
 
 if __name__ == "__main__":
-    testing_duct_seek_routine()
+    test_wall_aligner()

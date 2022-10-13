@@ -143,20 +143,51 @@ class Robot:
                 self.motor_l.hold()
         self.off_motors()
 
-    def simple_turn(self, angle, speed=50):
-        """Curva simples"""
-        motor_degrees = self.robot_axis_to_motor_degrees(angle)
+    def simple_turn(self, angle, speed=50, look_around_function=None):
+        """
+        Curva simples.
+
+
+        Caso look_around_function seja passado, retorna uma lista com todas
+        as leituras durante a curva.
+
+        A lista retornada contém tuplas com: (valores lidos, motor_r, motor_l).
+        """
+        dir_sign = 1 if angle > 0 else -1
+        speed = abs(speed)
+
+        motor_degrees = self.robot_axis_to_motor_degrees(abs(angle))
 
         initial_angle_l = self.motor_l.angle()
         initial_angle_r = self.motor_r.angle()
 
-        while abs(initial_angle_l - self.motor_l.angle()) < abs(motor_degrees) and abs(
-            initial_angle_r - self.motor_r.angle()
-        ) < abs(motor_degrees):
-            self.motor_r.dc(speed)
-            self.motor_l.dc(-speed)
+        reads = []
+
+        while (
+            abs(self.motor_l.angle() - initial_angle_l) < motor_degrees
+            or abs(self.motor_r.angle() - initial_angle_r) < motor_degrees
+        ):
+            if look_around_function is not None:
+                reads.append(
+                    (
+                        look_around_function(),
+                        self.motor_r.angle(),
+                        self.motor_l.angle(),
+                    )
+                )
+
+            if abs(self.motor_r.angle() - initial_angle_r) < motor_degrees:
+                self.motor_r.dc(dir_sign * -speed)
+            else:
+                self.motor_r.dc(0)
+
+            if abs(self.motor_l.angle() - initial_angle_l) < motor_degrees:
+                self.motor_l.dc(dir_sign * speed)
+            else:
+                self.motor_l.dc(0)
 
         self.off_motors()
+        return reads
 
     def one_wheel_turn(self, time, motor: Motor):
         """
@@ -178,6 +209,41 @@ class Robot:
 
         self.off_motors()
 
+    def move_both_to_target(
+        self,
+        target=None,
+        target_l=None,
+        target_r=None,
+        tolerable_diff=2,
+        speed=30,
+    ):
+        """
+        Move os dois motores simultaneamente para um ângulo alvo (que pode ser
+        diferente entre eles).
+
+        Suporta curvas!
+        """
+        if target is not None:
+            target_l = target
+            target_r = target
+
+        while (
+            abs(self.motor_l.angle() - target_l) > tolerable_diff
+            or abs(self.motor_r.angle() - target_r) > tolerable_diff
+        ):
+            if abs(self.motor_l.angle() - target_l) > tolerable_diff:
+                dir_sign_l = -1 if (self.motor_l.angle() - target_l) > 0 else 1
+                self.motor_l.dc(speed * dir_sign_l)
+            else:
+                self.motor_l.dc(0)
+
+            if abs(self.motor_r.angle() - target_r) > tolerable_diff:
+                dir_sign_r = -1 if (self.motor_r.angle() - target_r) > 0 else 1
+                self.motor_r.dc(speed * dir_sign_r)
+            else:
+                self.motor_r.dc(0)
+        self.off_motors()
+
     def pid_turn(
         self,
         angle,
@@ -192,6 +258,9 @@ class Robot:
         Curva com controle PID.
         - Angulo relativo ao eixo do robô.
         - angle positivo: direita, negativo: esquerda
+        - Modos(mode):
+            - 1: usa o valor dado como ângulo ao redor do eixo do robô
+            - 2: usa o valor dado como ângulo no eixo das rodas
         """
         if mode == 1:
             motor_degrees = self.robot_axis_to_motor_degrees(angle)
@@ -570,63 +639,32 @@ class Robot:
 
         self.off_motors()
 
-    def wall_aligner(self, speed: int = 30, max_angle: int = 300):
-        """Alinha na parede usando o mínimo local lido como alvo."""
-        self.off_motors()
+    def min_aligner(self, min_function, speed: int = 40, max_angle=90):
+        """
+        Alinha os motores usando o mínimo de uma função como alvo.
 
-        initial_angle_r = self.motor_r.angle()
-        initial_angle_l = self.motor_l.angle()
-        reads = [self.infra_side.distance()]
+        O argumento `min_function` deve ser a função a ser "minimizada"
+        (infra_sensor.distance, por exemplo).
+        """
+        infra_reads = self.simple_turn(
+            -(max_angle / 2), speed=speed, look_around_function=min_function
+        )
+        second_reads = self.simple_turn(
+            max_angle, speed=speed, look_around_function=min_function
+        )
+        infra_reads.extend(second_reads)
 
-        # primeira leitura inicial, só pra ter uma noção da situação
-        while (
-            abs(self.motor_r.angle() - initial_angle_r) <= 50
-            and abs(self.motor_l.angle() - initial_angle_l) <= 50
-        ):
-            reads.append(self.infra_side.distance())
-            self.motor_r.dc(speed)
-            self.motor_l.dc(-speed)
-        self.motor_l.dc(0)
-        self.motor_r.dc(0)
+        min_read = min(i_read for i_read, _, _ in infra_reads)
+        close_reads = [read for read in infra_reads if read[0] == min_read]
 
-        if min(reads) < reads[0] and min(reads) < reads[-1]:
-            # a menor leitura das iniciais já está entre a primeira e a última leitura
-            # logo, já está suficientemente alinhado com a parede
-            self.brick.speaker.beep()
-            return
+        motor_r_mean = sum(motor_r_angle for _, motor_r_angle, _ in close_reads) / len(
+            close_reads
+        )
+        motor_l_mean = sum(motor_l_angle for _, _, motor_l_angle in close_reads) / len(
+            close_reads
+        )
 
-        if reads[0] - reads[-1] >= 0:
-            # leituras estão diminuindo
-            direction_multiplier = 1
-            self.brick.light.on(Color.RED)
-        else:
-            # leituras estão aumentando, deve inverter a direção da curva
-            direction_multiplier = -1
-            self.brick.light.on(Color.ORANGE)
-
-        # if direction_multiplier == -1:
-        while self.infra_side.distance() > min(reads):
-            self.motor_r.dc(speed * direction_multiplier)
-            self.motor_l.dc(-speed * direction_multiplier)
-
-        initial_angle_r = self.motor_r.angle()
-        initial_angle_l = self.motor_l.angle()
-        reads.clear()
-
-        while (
-            abs(self.motor_r.angle() - initial_angle_r) <= max_angle
-            and abs(self.motor_l.angle() - initial_angle_l) <= max_angle
-        ):
-            self.motor_r.dc(speed * direction_multiplier)
-            self.motor_l.dc(-speed * direction_multiplier)
-
-            reads.append(self.infra_side.distance())
-
-            ev3_print(reads[-1])
-            if len(reads) > 2 and reads[-1] > reads[-2]:
-                # última leitura é maior que a penúltima
-                break
-        self.off_motors()
+        self.move_both_to_target(target_l=motor_l_mean, target_r=motor_r_mean)
 
     def wall_following_turn(
         self, high_speed=40, low_speed=15, flw_distance=7, max_turning_angle=500
