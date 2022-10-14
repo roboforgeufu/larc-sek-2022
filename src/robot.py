@@ -43,6 +43,7 @@ class Robot:
         color_r: Port = None,
         color_l: Port = None,
         debug: bool = False,
+        turn_correction: float = 1,
     ) -> None:
         # Brick EV3
         self.brick = EV3Brick()
@@ -50,6 +51,7 @@ class Robot:
         # Medidas do robô
         self.wheel_diameter = wheel_diameter
         self.wheel_distance = wheel_distance
+        self.turn_correction = turn_correction
 
         # Cronometro
         self.stopwatch = StopWatch()
@@ -92,8 +94,16 @@ class Robot:
             self.color_r = ColorSensor(color_r)
 
     def robot_axis_to_motor_degrees(self, axis_degrees: float):
-        """Grau relativo ao eixo do robô -> grau nas rodas (motores) do robô"""
-        return axis_degrees * (self.wheel_distance / self.wheel_diameter)
+        """
+        Grau relativo ao eixo do robô -> grau nas rodas (motores) do robô
+
+        Considera um possível fator de correção
+        """
+        return (
+            axis_degrees
+            * (self.wheel_distance / self.wheel_diameter)
+            * self.turn_correction
+        )
 
     def cm_to_motor_degrees(self, cm: float):
         """Distância em centímetros -> grau nas rodas (motores) do robô"""
@@ -278,9 +288,10 @@ class Robot:
         initial_angle_l = self.motor_l.angle()
         initial_angle_r = self.motor_r.angle()
 
-        target_angle_r = initial_angle_l - motor_degrees
-        target_angle_l = initial_angle_r + motor_degrees
+        target_angle_r = initial_angle_r - motor_degrees
+        target_angle_l = initial_angle_l + motor_degrees
 
+        self.ev3_print("INICIAL:", initial_angle_l, initial_angle_r)
         self.ev3_print("TARGET:", target_angle_l, target_angle_r)
 
         left_error = target_angle_l - self.motor_l.angle()
@@ -294,8 +305,10 @@ class Robot:
 
         n = 0
         while (
-            abs(self.motor_l.angle() - target_angle_l) > 1
-            or abs(self.motor_r.angle() - target_angle_r) > 1
+            int(abs(self.motor_l.angle() - target_angle_l))
+            > const.PID_TURN_ACCEPTABLE_DEGREE_DIFF
+            or int(abs(self.motor_r.angle() - target_angle_r))
+            > const.PID_TURN_ACCEPTABLE_DEGREE_DIFF
         ):
             n += 1
             left_error = target_angle_l - self.motor_l.angle()
@@ -319,8 +332,8 @@ class Robot:
                 pid.kp * right_error + pid.ki * right_error_i + pid.kd * right_error_d
             )
             self.ev3_print(
-                self.motor_r.angle(),
                 self.motor_l.angle(),
+                self.motor_r.angle(),
                 "|",
                 left_error,
                 left_error_i,
@@ -672,49 +685,6 @@ class Robot:
 
         self.move_both_to_target(target_l=motor_l_mean, target_r=motor_r_mean)
 
-    def wall_following_turn(
-        self, high_speed=40, low_speed=15, flw_distance=7, max_turning_angle=500
-    ):
-        """
-        Faz uma curva pra "dentro" enquanto seguindo a parede.
-
-        Feita pensando em ser usada em conjunto com a `pid_wall_follower`.
-        """
-        self.ev3_print(self.wall_following_turn.__name__)
-
-        initial_turning_angle = 0
-        while True:
-            self.ev3_print(self.infra_side.distance())
-            self.motor_l.dc(high_speed)
-            if self.infra_side.distance() > flw_distance:
-                # Perdeu a parede
-                # Desacelera um dos motores pra fazer curva
-                self.motor_r.dc(low_speed)
-                if initial_turning_angle == 0:
-                    # Se ainda não estava "contando" angulos da curva
-                    # A partir daqui, passa a contar (guarda o inicial)
-                    initial_turning_angle = self.motor_l.angle()
-                elif self.motor_l.angle() - initial_turning_angle > max_turning_angle:
-                    # Já estava contando angulos da curva (initial_turning_angle != 0),
-                    # e o robô excedeu o limite dado
-                    # Pode terminar a operação
-                    break
-                else:
-                    # Apenas para logs (durante a curva)
-                    # self.ev3_print(self.motor_l.angle() - initial_turning_angle)
-                    pass
-            else:
-                # Mantem os dois motores na mesma velocidade
-                self.motor_r.dc(high_speed)
-
-        while self.infra_side.distance() > 20:
-            self.ev3_print(self.infra_side.distance())
-            # Vai pra frente enquanto não ver parede só pra garantir que vai
-            # terminar com o sensor vendo ela.
-            self.motor_l.dc(high_speed)
-            self.motor_r.dc(high_speed)
-        self.off_motors()
-
     def pid_wall_follower(
         self,
         speed=50,
@@ -752,27 +722,39 @@ class Robot:
                 pid.kp * motor_error + pid.ki * motor_error_i + pid.kd * motor_error_d
             )
 
-            self.ev3_print(motor_error, motor_error_i, motor_error_d)
+            self.ev3_print(
+                motor_error,
+                motor_error_i,
+                motor_error_d,
+                "| COL_REFL:",
+                self.color_l.reflection(),
+                self.color_r.reflection(),
+            )
 
-            if self.color_l.reflection() >= 5:
+            # Condições de parada
+            if abs(motor_error) > 100 and abs(motor_error_d) > 60:
+                return_value = 1
+                break
+            if front_sensor.distance() < 100:
+                return_value = 2
+                break
+            if (
+                self.color_l.reflection() < const.COL_REFLECTION_HOLE_MAX
+                and self.color_r.reflection() < const.COL_REFLECTION_HOLE_MAX
+            ):
+                return_value = 3
+                break
+
+            # Movimentação
+            if self.color_l.reflection() >= const.COL_REFLECTION_HOLE_MAX:
                 self.motor_l.dc(speed + pid_speed)
             else:
                 self.motor_l.dc(0)
 
-            if self.color_r.reflection() >= 5:
+            if self.color_r.reflection() >= const.COL_REFLECTION_HOLE_MAX:
                 self.motor_r.dc(speed - pid_speed)
             else:
                 self.motor_r.dc(0)
-
-            if abs(motor_error) > 100 and abs(motor_error_d) > 60:
-                return_value = 1
-                break
-            elif front_sensor.distance() < 100:
-                return_value = 2
-                break
-            elif self.color_l.reflection() < 5 and self.color_r.reflection() < 5:
-                return_value = 3
-                break
         self.off_motors()
         return return_value
 

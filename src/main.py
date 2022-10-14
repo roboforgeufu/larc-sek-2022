@@ -31,7 +31,7 @@ from pybricks.tools import DataLog
 
 import constants as const
 from domain.collect import align_duct_center, duct_ends, find_duct
-from domain.gas_duct import gas_duct_routine
+from domain.gas_duct import duct_turn_routine, gas_duct_routine
 from domain.localization import (
     check_land_position_by_color,
     land_position_routine,
@@ -192,8 +192,6 @@ def testing_duct_seek_routine():
     # land_position_routine(katara)
     # katara.pid_turn(-90)
 
-    
-
     duct_found = find_duct(katara)
     wait_button_pressed(katara.brick)
     if not duct_found:
@@ -202,7 +200,7 @@ def testing_duct_seek_routine():
         katara.min_aligner(katara.ultra_front_r.distance)
         wait_button_pressed(katara.brick)
 
-        katara.pid_walk(cm=(duct_found/10)-5, vel=50)
+        katara.pid_walk(cm=(duct_found / 10) - 5, vel=50)
         wait_button_pressed(katara.brick)
 
         katara.min_aligner(katara.ultra_front_r.distance)
@@ -212,8 +210,8 @@ def testing_duct_seek_routine():
 
         katara.off_motors()
         katara.motor_claw.reset_angle(0)
-        katara.motor_claw.run_target(300,300)
-        katara.motor_claw.run_target(300,0)
+        katara.motor_claw.run_target(300, 300)
+        katara.motor_claw.run_target(300, 0)
 
     return None
 
@@ -230,14 +228,11 @@ def test_gas_duct_routine():
         infra_side=Port.S3,
         ultra_front=Port.S4,
         debug=True,
+        turn_correction=const.TESTING_TOPH_TURN_CORRECTION,
     )
 
-    # gas_duct_routine(toph)
-
-    toph.pid_turn(90)
-    # time.sleep(1)
-    # toph.pid_turn(-90)
+    gas_duct_routine(toph)
 
 
 if __name__ == "__main__":
-    testing_duct_seek_routine()
+    test_gas_duct_routine()
