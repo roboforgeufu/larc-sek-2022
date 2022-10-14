@@ -114,11 +114,14 @@ class Robot:
         self.motor_l.dc(0)
         self.motor_r.dc(0)
 
-    def ev3_print(self, *args, **kwargs):
+    def ev3_print(self, *args, clear=False, **kwargs):
         """
         Métodos para logs.
         """
         if self.debug:
+            if clear:
+                wait(10)
+                self.brick.screen.clear()
             self.brick.screen.print(*args, **kwargs)
             print(*args, **kwargs)
 
@@ -274,6 +277,8 @@ class Robot:
         """
         Curva com controle PID.
         - Angulo relativo ao eixo do robô.
+        - Angulo negativo: curva p / esquerda
+        - Angulo positivo: curva p / direita
         - Modos(mode):
             - 1: usa o valor dado como ângulo ao redor do eixo do robô
             - 2: usa o valor dado como ângulo no eixo das rodas

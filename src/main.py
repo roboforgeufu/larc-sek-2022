@@ -26,7 +26,7 @@ from pybricks.messaging import (
     LogicMailbox,
     NumericMailbox,
 )
-from pybricks.parameters import Port
+from pybricks.parameters import Port, Color
 from pybricks.tools import DataLog
 
 import constants as const
@@ -38,7 +38,7 @@ from domain.localization import (
     water_position_routine,
 )
 from robot import Robot
-from utils import PIDValues, ev3_print, get_hostname, wait_button_pressed
+from utils import PIDValues, ev3_print, get_hostname, wait_button_pressed, accurate_color
 
 
 def water_main(katara: Robot):
@@ -185,35 +185,107 @@ def testing_duct_seek_routine():
         motor_l=Port.B,
         # ultra_front_l=Port.S3,
         ultra_front_r=Port.S4,
-        # color_l=Port.S1,
-        # color_r=Port.S2,
+        color_l=Port.S1,
+        color_r=Port.S2,
+        turn_correction=0.9,
+        debug=False
     )
 
+    # while True:
+    #     katara.ev3_print(accurate_color(katara.color_l.rgb()),clear=True)
+
     # land_position_routine(katara)
-    # katara.pid_turn(-90)
+    
+    katara.pid_walk(cm=13,vel=-60)
+    # wait_button_pressed(katara.brick)
 
-    duct_found = find_duct(katara)
-    wait_button_pressed(katara.brick)
-    if not duct_found:
-        katara.off_motors()
-    else:
-        katara.min_aligner(katara.ultra_front_r.distance)
-        wait_button_pressed(katara.brick)
+    while True:
 
-        katara.pid_walk(cm=(duct_found / 10) - 5, vel=50)
-        wait_button_pressed(katara.brick)
+        katara.pid_turn(90)
+        katara.pid_walk(cm=5,vel=-60)
+        katara.forward_while_same_reflection()
+        # wait_button_pressed(katara.brick)
 
-        katara.min_aligner(katara.ultra_front_r.distance)
-        wait_button_pressed(katara.brick)
+        katara.pid_walk(cm=5,vel=60)
+        time.sleep(0.2)
 
-        katara.pid_walk(cm=5, vel=30)
+        duct_found, arc_length = find_duct(katara)
+        # wait_button_pressed(katara.brick)
 
-        katara.off_motors()
-        katara.motor_claw.reset_angle(0)
-        katara.motor_claw.run_target(300, 300)
-        katara.motor_claw.run_target(300, 0)
+        if not duct_found:
 
-    return None
+            #vai para o prox terço da cor
+
+            katara.forward_while_same_reflection(speed_r=-60,speed_l=-60)
+            katara.pid_turn(-90)
+            katara.pid_walk(cm=26,vel=-60)
+
+        #verifica se o duto é coletável
+
+        # print(arc_length,accurate_color(katara.color_l.rgb()))
+        if((accurate_color(katara.color_l.rgb())==Color.YELLOW and arc_length>5)
+        or (accurate_color(katara.color_l.rgb())==Color.RED and arc_length>10)
+        or (accurate_color(katara.color_l.rgb())==Color.BLUE and arc_length>15)):
+
+            #recolhe o duto
+
+            katara.pid_walk(cm=max(1,(duct_found / 10) - 8), vel=50)
+            # wait_button_pressed(katara.brick)
+
+            katara.min_aligner(katara.ultra_front_r.distance)
+            # wait_button_pressed(katara.brick)
+
+            katara.pid_walk(cm=5, vel=30)
+            # wait_button_pressed(katara.brick)
+
+            katara.off_motors()
+            katara.motor_claw.reset_angle(0)
+
+            katara.motor_claw.run_target(300, 300)
+            # wait_button_pressed(katara.brick)
+
+            katara.forward_while_same_reflection(speed_r=-60,speed_l=-60)
+            # wait_button_pressed(katara.brick)
+
+            katara.pid_walk(cm=13, vel=-60)
+            # wait_button_pressed(katara.brick)
+
+            katara.pid_turn(-90)
+            # wait_button_pressed(katara.brick)
+
+            katara.forward_while_same_reflection()
+            katara.pid_align()
+            # wait_button_pressed(katara.brick)
+
+            katara.pid_walk(cm=40, vel=-60)
+            # wait_button_pressed(katara.brick)
+
+            katara.pid_turn(-90)
+            # wait_button_pressed(katara.brick)
+
+            katara.motor_claw.run_target(300, -10)
+            # wait_button_pressed(katara.brick)
+
+            katara.pid_walk(cm=5,vel=-60)
+            # wait_button_pressed(katara.brick)
+
+            katara.pid_turn(180)
+            # wait_button_pressed(katara.brick)
+
+            katara.forward_while_same_reflection()
+            # wait_button_pressed(katara.brick)
+
+            katara.pid_walk(cm=5,vel=-60)
+            # wait_button_pressed(katara.brick)
+
+            katara.pid_turn(-90)
+            # wait_button_pressed(katara.brick)
+
+            katara.forward_while_same_reflection()
+            # wait_button_pressed(katara.brick)
+            break
+    
+    
 
 
 def test_gas_duct_routine():
@@ -235,4 +307,5 @@ def test_gas_duct_routine():
 
 
 if __name__ == "__main__":
-    test_gas_duct_routine()
+    testing_duct_seek_routine()
+    
