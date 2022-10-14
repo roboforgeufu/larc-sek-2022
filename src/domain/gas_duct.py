@@ -32,8 +32,8 @@ def duct_turn_routine(robot: Robot, speed=const.SEARCH_WALL_SPEED):
     robot.ev3_print(duct_turn_routine.__name__)
     robot.brick.speaker.beep()
     # wait_button_pressed(robot.brick)
-    robot.pid_walk(13)
-    robot.pid_turn(70)
+    robot.pid_walk(17)
+    robot.pid_turn(90)
 
     robot.ev3_print("infra_side:", robot.infra_side.distance())
     while robot.infra_side.distance() > const.WALL_SEEN_DIST:

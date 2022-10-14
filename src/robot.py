@@ -32,6 +32,7 @@ class Robot:
         motor_r: Port = None,
         motor_l: Port = None,
         motor_claw: Port = None,
+        motor_sensor: Port = None,
         infra_side: Port = None,
         infra_front: Port = None,
         infra_front_l: Port = None,
@@ -66,6 +67,8 @@ class Robot:
             self.motor_l = Motor(motor_l)
         if motor_claw is not None:
             self.motor_claw = Motor(motor_claw)
+        if motor_sensor is not None:
+            self.motor_sensor = Motor(motor_sensor)
 
         # Sensores infra vermelhos
         if infra_side is not None:
@@ -760,7 +763,16 @@ class Robot:
                 self.motor_r.dc(speed - pid_speed)
             else:
                 self.motor_r.dc(0)
+
         self.off_motors()
+        final_diff = self.motor_r.angle() - self.motor_l.angle()
+        self.ev3_print("final_diff:", final_diff)
+
+        self.move_both_to_target(
+            target_r=self.motor_r.angle() - motor_diff / 2,
+            target_l=self.motor_l.angle() + motor_diff / 2,
+        )
+
         return return_value
 
     def move_to_distance(
