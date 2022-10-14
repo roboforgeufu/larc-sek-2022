@@ -46,16 +46,20 @@ def accurate_color(rgb_tuple):
     """
     Processamento de cor pra evitar os erros da leitura padrão.
     """
-    if sum(rgb_tuple) == 0:
-        return None
-    if rgb_tuple[0] > 40 and rgb_tuple[1] > 40 and rgb_tuple[2] > 40:
-        return Color.WHITE
-    if rgb_tuple[0] in range(60, 75) and rgb_tuple[1] in range(30, 45):
-        return Color.YELLOW
-    if rgb_tuple[0] < 15 and rgb_tuple[1] > 15 and rgb_tuple[2] < 15:
+    if rgb_tuple[0] in range(0,10) and rgb_tuple[1] in range(20,30) and rgb_tuple[2] in range(15,30):
+        return Color.BLUE
+    if rgb_tuple[0] in range(0,5) and rgb_tuple[1] in range(15,30) and rgb_tuple[2] in range(0,5):
         return Color.GREEN
-    if rgb_tuple[0] < 15 and rgb_tuple[1] < 15 and rgb_tuple[2] < 15:
+    if rgb_tuple[0] in range(30, 65) and rgb_tuple[1] in range(5, 15) and rgb_tuple[2] in range(0,10):
+        return Color.RED
+    if rgb_tuple[0] in range(60, 75) and rgb_tuple[1] in range(30, 50) and rgb_tuple[2] in range(5, 20):
+        return Color.YELLOW
+    if rgb_tuple[0] > 65 and rgb_tuple[1] > 65 and rgb_tuple[2] > 65:
+        return Color.WHITE
+    if rgb_tuple[0] in range(5,15) and rgb_tuple[1] in range(5,15) and rgb_tuple[2] in range(5,15): #linha
         return Color.BLACK
+    if sum(rgb_tuple) < 5:
+        return None
 
 
 def wait_button_pressed(ev3: EV3Brick, button: Button = Button.CENTER):

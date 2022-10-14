@@ -98,12 +98,11 @@ def duct_ends(
     motor_mean = (abs(robot.motor_l.angle()) + abs(robot.motor_l.angle()))/2
     robot.pid_turn(motor_mean/2,mode=2)
 
-    # full_circle = 2 * math.pi * (ultra_mean/10)
-    # length = (theta * full_circle)/(2 * math.pi)
-    # print("theta=",theta,"ultra=",ultra_mean,"circle=",full_circle,"length=",length)
-    # return length
-    x = (const.WHEEL_DIAMETER*motor_mean)/(const.WHEEL_DIST)
-    print(motor_mean,x)
+    theta = (const.WHEEL_DIAMETER*motor_mean)/(const.WHEEL_DIST)
+    theta_rad = (theta * math.pi)/180
+    arc_length = theta_rad * ((ultra_mean/10)+8)
+    return arc_length
+
 
 def align_duct_center(robot: Robot):
     """O robô alinha no centro do duto correspondente"""
@@ -143,13 +142,13 @@ def find_duct(robot: Robot):
         robot.motor_r.dc(-30)
         if(len(ultra_reads)>=10):
             if(ultra_reads[-1]-ultra_reads[-2]<0 and sum(ultra_reads[-10:])/10 < const.DIST_LINE_TO_END):
-                duct_ends(robot)
+                arc_length = duct_ends(robot)
                 robot.off_motors()
-                return lowest_ultra_value
+                return lowest_ultra_value, arc_length
 
         if(m_mean>robot.robot_axis_to_motor_degrees(90)):
             robot.pid_turn(-45)
             robot.off_motors()
-            return False
+            return False, 0
         
     

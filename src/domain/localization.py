@@ -118,8 +118,6 @@ def land_position_routine(robot: Robot):
                 robot.pid_line_follower_color_id(
                     100, robot.color_l, robot.color_r, color_order
                 )
-                robot.pid_accelerated_walk(-500, 2)
-                robot.pid_turn(180)
             break
 
         elif location == "EDGE":
