@@ -31,7 +31,12 @@ from pybricks.tools import DataLog
 
 import constants as const
 from domain.collect import align_duct_center, duct_ends, find_duct
-from domain.gas_duct import duct_turn_routine, gas_duct_routine
+from domain.gas_duct import (
+    armagedon_the_end_of_times,
+    check_hole,
+    duct_follower_turn_routine,
+    gas_duct_routine,
+)
 from domain.localization import (
     check_land_position_by_color,
     land_position_routine,
@@ -141,10 +146,14 @@ def testing_duct_measurement():
         wheel_distance=const.WHEEL_DIST,
         motor_r=Port.C,
         motor_l=Port.B,
-        # color_l=Port.S1,
-        # color_r=Port.S2,
+        motor_claw=Port.A,
+        motor_sensor=Port.D,
+        color_l=Port.S1,
+        color_r=Port.S2,
         infra_side=Port.S3,
-        ultra_front_r=Port.S4,
+        ultra_front=Port.S4,
+        debug=True,
+        turn_correction=const.TOPH_TURN_CORRECTION,
     )
 
     # ev3_print(get_hostname(), ev3=toph.brick)
@@ -155,24 +164,9 @@ def testing_duct_measurement():
 
     # num_mbox = NumericMailbox("start", client)
 
+    toph.min_aligner(toph.infra_side.distance)
     toph.pid_wall_follower()
-    toph.walk_to_hole(mode=1)
-    toph.pid_walk(cm=5, vel=-60)
-    toph.walk_to_hole(mode=2)
-    measurement = toph.hole_measurement()
-    print(measurement)
-    if measurement > 12:
-        print("15cm")
-        # num_mbox.send(2)
-    elif measurement > 17:
-        print("20cm")
-        # num_mbox.send(3)
-    else:
-        print("10cm")
-        # num_mbox.send(1)
-    toph.pid_walk(cm=10, vel=60)
-    toph.wall_aligner()
-    toph.pid_wall_follower()
+    check_hole(toph)
     return None
 
 
@@ -216,13 +210,14 @@ def testing_duct_seek_routine():
     return None
 
 
-def test_gas_duct_routine():
+def test_hole_reading():
     toph = Robot(
         wheel_diameter=const.WHEEL_DIAMETER,
         wheel_distance=const.WHEEL_DIST,
         motor_r=Port.C,
         motor_l=Port.B,
         motor_claw=Port.A,
+        motor_sensor=Port.D,
         color_l=Port.S1,
         color_r=Port.S2,
         infra_side=Port.S3,
@@ -235,4 +230,4 @@ def test_gas_duct_routine():
 
 
 if __name__ == "__main__":
-    test_gas_duct_routine()
+    test_hole_reading()
