@@ -304,8 +304,13 @@ def test_hole_reading():
         turn_correction=const.TOPH_TURN_CORRECTION,
     )
 
-    gas_duct_routine(toph)
+    toph.motor_claw.run_target(300, 300)
+    toph.move_to_distance(70, sensor=toph.ultra_front)
+    toph.motor_claw.run_target(100, 120)
+    toph.move_to_distance(40, sensor=toph.ultra_front)
+    toph.move_to_distance(100, sensor=toph.ultra_front)
+    # gas_duct_routine(toph)
 
 
 if __name__ == "__main__":
-    testing_duct_seek_routine()
+    test_hole_reading()

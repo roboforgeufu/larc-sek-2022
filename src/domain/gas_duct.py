@@ -7,7 +7,7 @@ from robot import Robot
 from utils import wait_button_pressed
 
 
-def gas_duct_routine(robot: Robot):
+def gas_duct_routine(robot: Robot, delivery=None):
     robot.forward_while_same_reflection(reflection_diff=2)
     robot.pid_walk(5, -80)
     robot.pid_turn(-90)
