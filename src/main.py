@@ -188,13 +188,17 @@ def testing_duct_seek_routine():
         color_l=Port.S1,
         color_r=Port.S2,
         turn_correction=0.9,
-        debug=False
+        debug=True
     )
 
     # while True:
-    #     katara.ev3_print(accurate_color(katara.color_l.rgb()),clear=True)
+    #     katara.ev3_print(katara.color_l.rgb(),accurate_color(katara.color_l.rgb()),clear=True)
 
-    # land_position_routine(katara)
+    # color_order = []
+    # print(katara.pid_line_follower_color_id(vel=80,sensor=katara.color_r,array=color_order))
+    # wait_button_pressed(katara.brick)
+
+    land_position_routine(katara)
     
     katara.pid_walk(cm=13,vel=-60)
     # wait_button_pressed(katara.brick)
@@ -285,8 +289,11 @@ def testing_duct_seek_routine():
             # wait_button_pressed(katara.brick)
             break
     
-    
+    # dutos subsequentes (comunicação bluetooth)
 
+    # num_mbox = NumericMailbox("start", client)
+    
+    
 
 def test_gas_duct_routine():
     toph = Robot(

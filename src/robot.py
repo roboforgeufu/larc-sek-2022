@@ -17,7 +17,7 @@ from pybricks.parameters import Color, Port
 from pybricks.tools import StopWatch, wait
 
 import constants as const
-from utils import PIDValues, wait_button_pressed
+from utils import PIDValues, wait_button_pressed, accurate_color
 
 
 class Robot:
@@ -607,11 +607,10 @@ class Robot:
     def pid_line_follower_color_id(
         self,
         vel,
-        sensor_follow,
-        sensor_color,
+        sensor,
         array,
         pid: PIDValues = PIDValues(
-            target=35,  # medir na linha toda vez
+            target=30,  # medir na linha toda vez
             kp=0.25,
             ki=0.003,
             kd=0.4,
@@ -625,13 +624,13 @@ class Robot:
         error = 0
         i_share = 0.0
         elapsed_time = 0
-
+        break_array = []
         valid_colors = [Color.YELLOW, Color.BLUE, Color.RED]
 
         self.stopwatch.reset()
         while True:
             prev_error = error
-            error = pid.target - sensor_follow.reflection()
+            error = sum(sensor.rgb()) - pid.target
             p_share = error * pid.kp
 
             if abs(error) < 3:
@@ -646,19 +645,27 @@ class Robot:
 
             pid_correction = p_share + i_share + d_share
 
-            pid_sign = 1 if sensor_follow == self.color_l else -1
+            pid_sign = 1 if sensor == self.color_l else -1
+            if ((accurate_color(sensor.rgb())!= Color.WHITE)
+            or (accurate_color(sensor.rgb())!= Color.BLACK)
+            or (accurate_color(sensor.rgb())!= None)):
+                pid_sign = pid_sign * (-1)
 
             self.motor_r.dc(vel + pid_correction * pid_sign)
             self.motor_l.dc(vel - pid_correction * pid_sign)
 
             if (
-                sensor_color.color() not in array
-                and sensor_color.color() in valid_colors
+                accurate_color(sensor.rgb()) not in array
+                and accurate_color(sensor.rgb()) in valid_colors
             ):
-                array.append(sensor_color.color())
-                valid_colors.remove(sensor_color.color())
+                array.append(accurate_color(sensor.rgb()))
+                valid_colors.remove(accurate_color(sensor.rgb()))
 
-            if sensor_color.color() is None:
+            if(accurate_color(sensor.rgb())!=None):
+                break_array.append(accurate_color(sensor.rgb()))
+            if(len(break_array)>5):
+                break_array.clear()
+            if break_array.count(None) == 5:
                 break
 
         self.motor_r.hold()
