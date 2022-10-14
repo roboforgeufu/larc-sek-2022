@@ -228,7 +228,7 @@ def test_gas_duct_routine():
         infra_side=Port.S3,
         ultra_front=Port.S4,
         debug=True,
-        turn_correction=const.TESTING_TOPH_TURN_CORRECTION,
+        turn_correction=const.TOPH_TURN_CORRECTION,
     )
 
     gas_duct_routine(toph)

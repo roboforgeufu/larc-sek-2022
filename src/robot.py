@@ -32,6 +32,7 @@ class Robot:
         motor_r: Port = None,
         motor_l: Port = None,
         motor_claw: Port = None,
+        motor_sensor: Port = None,
         infra_side: Port = None,
         infra_front: Port = None,
         infra_front_l: Port = None,
@@ -66,6 +67,8 @@ class Robot:
             self.motor_l = Motor(motor_l)
         if motor_claw is not None:
             self.motor_claw = Motor(motor_claw)
+        if motor_sensor is not None:
+            self.motor_sensor = Motor(motor_sensor)
 
         # Sensores infra vermelhos
         if infra_side is not None:
@@ -755,6 +758,7 @@ class Robot:
                 self.motor_r.dc(speed - pid_speed)
             else:
                 self.motor_r.dc(0)
+        self.ev3_print("motor_diff:", motor_diff)
         self.off_motors()
         return return_value
 
