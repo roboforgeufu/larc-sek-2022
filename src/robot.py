@@ -758,8 +758,16 @@ class Robot:
                 self.motor_r.dc(speed - pid_speed)
             else:
                 self.motor_r.dc(0)
-        self.ev3_print("motor_diff:", motor_diff)
+
         self.off_motors()
+        final_diff = self.motor_r.angle() - self.motor_l.angle()
+        self.ev3_print("final_diff:", final_diff)
+
+        self.move_both_to_target(
+            target_r=self.motor_r.angle() - motor_diff / 2,
+            target_l=self.motor_l.angle() + motor_diff / 2,
+        )
+
         return return_value
 
     def move_to_distance(
