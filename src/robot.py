@@ -715,7 +715,7 @@ class Robot:
         self.ev3_print(self.pid_wall_follower.__name__)
 
         if front_sensor is None:
-            front_sensor = self.ultra_front_r
+            front_sensor = self.ultra_front
 
         motor_error_i = 0
         prev_motor_error = 0
@@ -906,6 +906,10 @@ class Robot:
             kd=3,
         ),
     ):
+        """
+        Modo 1: ré até deixar de ver o buraco
+        Modo 2: pra frente até ver o buraco
+        """
         pid.kp = 3
         pid.ki = 0.1
         pid.kd = 5

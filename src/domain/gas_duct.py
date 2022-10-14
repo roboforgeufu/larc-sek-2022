@@ -1,10 +1,14 @@
+import time
+
+from pybricks.parameters import Color
+
 import constants as const
 from robot import Robot
 from utils import wait_button_pressed
 
 
 def gas_duct_routine(robot: Robot):
-    robot.forward_while_same_reflection(reflection_diff=15)
+    robot.forward_while_same_reflection(reflection_diff=2)
     robot.pid_walk(5, -80)
     robot.pid_turn(-90)
 
@@ -16,23 +20,34 @@ def gas_duct_routine(robot: Robot):
     while True:
         wall_flw_value = robot.pid_wall_follower(front_sensor=robot.ultra_front)
         if wall_flw_value == 1:
-            duct_turn_routine(robot)
+            # Curva pra dentro ou buraco
+            robot.pid_walk(1, vel=30)
+            if check_hole(robot):
+                # buraco
+                duct_measure_hole(robot)
+            else:
+                # curva pra dentro
+                duct_follower_turn_routine(robot)
         elif wall_flw_value == 2:
+            # Curva pra fora
             robot.move_to_distance(
                 const.WALL_FOLLOWER_FRONT_DIST, sensor=robot.ultra_front
             )
             robot.pid_turn(-90)
         else:
+            # Chegou na borda do mapa
             break
         robot.min_aligner(min_function=robot.infra_side.distance)
+    if wall_flw_value == 3:
+        armagedon_the_end_of_times(robot)
     robot.off_motors()
 
 
-def duct_turn_routine(robot: Robot, speed=const.SEARCH_WALL_SPEED):
-    robot.ev3_print(duct_turn_routine.__name__)
+def duct_follower_turn_routine(robot: Robot, speed=const.SEARCH_WALL_SPEED):
+    robot.ev3_print(duct_follower_turn_routine.__name__)
     robot.brick.speaker.beep()
     # wait_button_pressed(robot.brick)
-    robot.pid_walk(17)
+    robot.pid_walk(14)
     robot.pid_turn(90)
 
     robot.ev3_print("infra_side:", robot.infra_side.distance())
@@ -47,45 +62,43 @@ def duct_turn_routine(robot: Robot, speed=const.SEARCH_WALL_SPEED):
     # wait_button_pressed(robot.brick)
 
 
-def wall_following_turn(
-    robot: Robot, high_speed=40, low_speed=15, flw_distance=7, max_turning_angle=500
-):
+def check_hole(robot: Robot):
     """
-    Faz uma curva pra "dentro" enquanto seguindo a parede.
-
-    Feita pensando em ser usada em conjunto com a `pid_wall_follower`.
+    True caso seja um pedaço faltante do gasoduto,
+    False caso seja um "final" de gasoduto (curva).
     """
-    robot.ev3_print(robot.wall_following_turn.__name__)
+    robot.motor_sensor.run_target(300, 600)
+    hole_seen = robot.infra_side.distance() <= const.WALL_SEEN_DIST
+    if hole_seen:
+        robot.min_aligner(robot.infra_side.distance)
+    robot.motor_sensor.run_target(300, 0)
+    return hole_seen
 
-    initial_turning_angle = 0
+
+def duct_measure_hole(robot: Robot):
+    robot.ev3_print(duct_measure_hole.__name__)
+    robot.walk_to_hole(mode=1)
+
+    robot.pid_walk(cm=5, vel=-60)
+    robot.walk_to_hole(mode=2)
+
+    measurement = robot.hole_measurement()
+
+    robot.ev3_print(measurement)
+    if measurement > 17:
+        measured_value = 20
+    elif measurement > 12:
+        measured_value = 15
+    else:
+        measured_value = 10
+    robot.ev3_print(measured_value, "cm")
+    return measured_value
+
+
+def armagedon_the_end_of_times(robot: Robot):
+    robot.brick.light.on(Color.RED)
+    robot.ev3_print("THIS IS THE\nARMAGEDON\nTHE END OF TIMES")
     while True:
-        robot.ev3_print(robot.infra_side.distance())
-        robot.motor_l.dc(high_speed)
-        if robot.infra_side.distance() > flw_distance:
-            # Perdeu a parede
-            # Desacelera um dos motores pra fazer curva
-            robot.motor_r.dc(low_speed)
-            if initial_turning_angle == 0:
-                # Se ainda não estava "contando" angulos da curva
-                # A partir daqui, passa a contar (guarda o inicial)
-                initial_turning_angle = robot.motor_l.angle()
-            elif robot.motor_l.angle() - initial_turning_angle > max_turning_angle:
-                # Já estava contando angulos da curva (initial_turning_angle != 0),
-                # e o robô excedeu o limite dado
-                # Pode terminar a operação
-                break
-            else:
-                # Apenas para logs (durante a curva)
-                # robot.ev3_print(robot.motor_l.angle() - initial_turning_angle)
-                pass
-        else:
-            # Mantem os dois motores na mesma velocidade
-            robot.motor_r.dc(high_speed)
-
-    while robot.infra_side.distance() > 20:
-        robot.ev3_print(robot.infra_side.distance())
-        # Vai pra frente enquanto não ver parede só pra garantir que vai
-        # terminar com o sensor vendo ela.
-        robot.motor_l.dc(high_speed)
-        robot.motor_r.dc(high_speed)
-        robot.off_motors()
+        robot.brick.speaker.beep()
+        robot.brick.speaker.beep(100)
+        robot.brick.speaker.beep(300)
