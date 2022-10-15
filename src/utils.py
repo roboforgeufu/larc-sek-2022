@@ -54,7 +54,7 @@ def accurate_color(rgb_tuple):
         return Color.BLUE
     if (
         rgb_tuple[0] in range(0, 5)
-        and rgb_tuple[1] in range(15, 30)
+        and rgb_tuple[1] in range(7, 30)
         and rgb_tuple[2] in range(0, 5)
     ):
         return Color.GREEN

@@ -139,7 +139,7 @@ class Robot:
         Move ambos os motores (de forma individual) até que a intensidade de reflexão
         mude o suficiente (`reflection_diff`)
         """
-        self.ev3_print(self.forward_while_same_reflection.__name__)
+        # self.ev3_print(self.forward_while_same_reflection.__name__)
 
         starting_ref_r = self.color_r.reflection()
         starting_ref_l = self.color_l.reflection()
@@ -147,16 +147,13 @@ class Robot:
         stopped_l = False
         stopped_r = False
         while not stopped_l or not stopped_r:
-            if avoid_obstacles:
-                while self.ultra_front.distance() < const.OBSTACLE_DIST:
-                    self.motor_l.dc(30)
-                    self.motor_r.dc(-30)
-                self.off_motors()
+            if avoid_obstacles and self.ultra_front.distance() < const.OBSTACLE_DIST:
+                self.pid_turn(90)
 
             diff_ref_r = self.color_r.reflection() - starting_ref_r
             diff_ref_l = self.color_l.reflection() - starting_ref_l
 
-            self.ev3_print(diff_ref_l, diff_ref_r)
+            # self.ev3_print(diff_ref_l, diff_ref_r)
 
             if abs(diff_ref_r) < reflection_diff:
                 self.motor_r.dc(speed_r)

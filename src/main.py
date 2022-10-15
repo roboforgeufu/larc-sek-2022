@@ -196,16 +196,39 @@ def water_main(katara: Robot):
     katara.ev3_print("1")
     logic_mbox = LogicMailbox("start", client)
     katara.ev3_print("2")
-    logic_mbox.wait()
+    # Confirma conexão (sync)
+    logic_mbox.send(True)
     katara.ev3_print("3")
-    start = logic_mbox.read()
-    katara.ev3_print(start)
+    # Espera confirmação da Toph
+    logic_mbox.wait()
 
     water_position_routine(katara)
+
+    # Avisa toph que está fora da meeting area
     logic_mbox.send(True)
 
     gas_duct_routine(katara)
 
 
+def test_katara():
+    katara = Robot(
+        wheel_diameter=const.WHEEL_DIAMETER,
+        wheel_distance=const.WHEEL_DIST,
+        motor_r=Port.C,
+        motor_l=Port.B,
+        motor_claw=Port.A,
+        motor_sensor=Port.D,
+        color_l=Port.S1,
+        color_r=Port.S2,
+        infra_side=Port.S3,
+        ultra_front=Port.S4,
+        debug=True,
+        turn_correction=const.KATARA_TURN_CORRECTION,
+    )
+
+    water_position_routine(katara)
+    gas_duct_routine(katara)
+
+
 if __name__ == "__main__":
-    main()
+    test_katara()

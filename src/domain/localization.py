@@ -5,7 +5,7 @@ Módulo para funções que envolvem o problema da localização/mapeamento no ma
 from pybricks.parameters import Color
 
 from robot import Robot
-from utils import accurate_color, ev3_print
+from utils import accurate_color, ev3_print, wait_button_pressed
 
 
 def check_land_position_by_color(robot: Robot) -> str:
@@ -15,6 +15,8 @@ def check_land_position_by_color(robot: Robot) -> str:
     """
     color_left = accurate_color(robot.color_l.rgb())
     color_right = accurate_color(robot.color_r.rgb())
+
+    robot.ev3_print(robot.color_l.rgb(), robot.color_r.rgb())
 
     if color_left == Color.GREEN:
         pos_left = "RAMP"
@@ -41,12 +43,16 @@ def check_land_position_by_color(robot: Robot) -> str:
 def water_position_routine(robot: Robot):
     """Rotina de identificação de posição no mapa do robô da água."""
     while True:
-        robot.forward_while_same_reflection(60, 80, avoid_obstacles=True)
+        robot.forward_while_same_reflection(
+            60, 80, avoid_obstacles=True, reflection_diff=20
+        )
+
         location = check_land_position_by_color(robot)
-        ev3_print(location, ev3=robot.brick)
+
+        wait_button_pressed(robot.brick)
 
         if location == "EDGE":
-            robot.simple_walk(10, -50)
+            robot.simple_walk(-10, 50)
             robot.simple_turn(90)
         elif ":" in location:
             left_loc, right_loc = location.split(":")
@@ -54,21 +60,21 @@ def water_position_routine(robot: Robot):
                 # Lida com motor direito na borda
                 robot.brick.light.on(Color.GREEN)
                 robot.brick.speaker.beep()
-                robot.simple_walk(5, -50)
+                robot.simple_walk(-5, 50)
                 robot.simple_turn(45 if left_loc == "RAMP" else 180)
                 robot.brick.light.off()
             elif left_loc == "EDGE":
                 robot.brick.light.on(Color.ORANGE)
                 robot.brick.speaker.beep()
                 # Lida com motor esquerdo na borda
-                robot.simple_walk(5, -50)
+                robot.simple_walk(-5, 50)
                 robot.simple_turn(45 if left_loc == "RAMP" else 180, speed=-50)
                 robot.brick.light.off()
             else:
-                robot.simple_walk(5, -50)
+                robot.simple_walk(-5, 50)
                 robot.simple_turn(45)
         elif "RAMP" not in location:
-            robot.simple_walk(10, -50)
+            robot.simple_walk(-10, 50)
             robot.simple_turn(180)
         else:
             break
