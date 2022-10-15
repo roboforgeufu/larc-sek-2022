@@ -18,14 +18,14 @@ def check_land_position_by_color(robot: Robot) -> str:
 
     if color_left == Color.GREEN:
         pos_left = "RAMP"
-    elif color_left is None:
+    elif color_left == "None":
         pos_left = "EDGE"
     else:
         pos_left = str(color_left)
 
     if color_right == Color.GREEN:
         pos_right = "RAMP"
-    elif color_right is None:
+    elif color_right == "None":
         pos_right = "EDGE"
     else:
         pos_right = str(color_right)
@@ -89,7 +89,6 @@ def land_position_routine(robot: Robot):
     color_order = []  # type: ignore
     robot.forward_while_same_reflection(80, 100, 10)
     location = check_land_position_by_color(robot)
-
     while True:
         if location == "RAMP":
             robot.pid_align()
@@ -99,31 +98,32 @@ def land_position_routine(robot: Robot):
             location = check_land_position_by_color(robot)
 
         elif location == "COLOR":
+            robot.pid_walk(cm = 10, vel = -60)
             robot.one_wheel_turn(800, robot.motor_r)
-            robot.pid_line_grabber(100, 1500, robot.color_l)
+            robot.pid_line_grabber(100, 2000, robot.color_r)
             color_order = robot.pid_line_follower_color_id(
-                100, robot.color_l, robot.color_r, color_order
+                80, robot.color_r, color_order
             )
             if len(color_order) < 2:
                 robot.pid_accelerated_walk(-500, 2)
-                robot.pid_turn(180)
-                robot.pid_line_grabber(100, 1500, robot.color_r)
+                robot.pid_turn(170)
+                robot.pid_line_grabber(100, 2000, robot.color_l)
                 color_order = robot.pid_line_follower_color_id(
-                    100, robot.color_r, robot.color_l, color_order
+                    80, robot.color_l, color_order
                 )
                 ev3_print(color_order, ev3=robot.brick)
                 robot.pid_accelerated_walk(-500, 2)
-                robot.pid_turn(180)
-                robot.pid_line_grabber(100, 1500, robot.color_l)
+                robot.pid_turn(190)
+                robot.pid_line_grabber(100, 2000, robot.color_r)
                 robot.pid_line_follower_color_id(
-                    100, robot.color_l, robot.color_r, color_order
+                    80, robot.color_r
                 )
             break
 
         elif location == "EDGE":
             robot.pid_align()
             robot.pid_accelerated_walk(-500, 3)
-            robot.pid_turn(-105)
+            robot.pid_turn(-90)
             robot.forward_while_same_reflection(80, 80, 10)
             location = check_land_position_by_color(robot)
 

@@ -72,28 +72,6 @@ def water_main(katara: Robot):
         logic_mbox.send(True)
 
 
-def land_main(toph: Robot):
-    """Main da Toph"""
-    ev3_print(get_hostname(), ev3=toph.brick)
-    client = BluetoothMailboxClient()
-    ev3_print("CLIENT: establishing connection...")
-    client.connect(const.SERVER)
-    ev3_print("CLIENT: connected!")
-
-    logic_mbox = LogicMailbox("start", client)
-    ev3_print("1", ev3=toph.brick)
-    logic_mbox.send(True)
-    ev3_print("2", ev3=toph.brick)
-    logic_mbox.wait()
-    ev3_print("3", ev3=toph.brick)
-    start = logic_mbox.read()
-    ev3_print("4", ev3=toph.brick)
-    ev3_print(start, ev3=toph.brick)
-    ev3_print("5", ev3=toph.brick)
-    if start:
-        land_position_routine(toph)
-
-
 def testing_comunications_locations():
     """Main de testes"""
     hostname = get_hostname()
@@ -109,12 +87,15 @@ def testing_comunications_locations():
             Robot(
                 wheel_diameter=const.WHEEL_DIAMETER,
                 wheel_distance=const.WHEEL_DIST,
-                motor_r=Port.B,
-                motor_l=Port.C,
+                motor_claw=Port.A,
+                motor_r=Port.C,
+                motor_l=Port.B,
+                # ultra_front_l=Port.S3,
+                ultra_front_r=Port.S4,
                 color_l=Port.S1,
                 color_r=Port.S2,
-                ultra_front_l=Port.S3,
-                ultra_front_r=Port.S4,
+                turn_correction=0.9,
+                debug=False
             )
         )
 
@@ -176,124 +157,96 @@ def testing_duct_measurement():
     return None
 
 
-def testing_duct_seek_routine():
-    katara = Robot(
-        wheel_diameter=const.WHEEL_DIAMETER,
-        wheel_distance=const.WHEEL_DIST,
-        motor_claw=Port.A,
-        motor_r=Port.C,
-        motor_l=Port.B,
-        # ultra_front_l=Port.S3,
-        ultra_front_r=Port.S4,
-        color_l=Port.S1,
-        color_r=Port.S2,
-        turn_correction=0.9,
-        debug=True
-    )
+def land_main(toph: Robot):
 
     # while True:
-    #     katara.ev3_print(katara.color_l.rgb(),accurate_color(katara.color_l.rgb()),clear=True)
+    #     toph.ev3_print(toph.color_l.rgb(),accurate_color(toph.color_l.rgb()),clear=True)
 
-    # color_order = []
-    # print(katara.pid_line_follower_color_id(vel=80,sensor=katara.color_r,array=color_order))
-    # wait_button_pressed(katara.brick)
+    """Main da Toph"""
 
-    land_position_routine(katara)
-    
-    katara.pid_walk(cm=13,vel=-60)
-    # wait_button_pressed(katara.brick)
+    # conexao entre os bricks por bluetooth
+    ev3_print(get_hostname(), ev3=toph.brick)
+    client = BluetoothMailboxClient()
+    ev3_print("CLIENT: establishing connection...")
+    client.connect(const.SERVER)
+    ev3_print("CLIENT: connected!")
 
-    while True:
+    # espera a katara sair da meeting area 
+    # antes de comecar a rotina de localizacao
+    logic_mbox = LogicMailbox("start", client)
+    logic_mbox.send(True)
+    logic_mbox.wait()
+    start = logic_mbox.read()
+    ev3_print(start, ev3=toph.brick)
 
-        katara.pid_turn(90)
-        katara.pid_walk(cm=5, vel=-60)
-        katara.forward_while_same_reflection()
-        # wait_button_pressed(katara.brick)
+    if start:
 
-        katara.pid_walk(cm=5, vel=60)
-        time.sleep(0.2)
+        # algoritmo de localizacao terrestre
+        land_position_routine(toph)
 
-        duct_found, arc_length = find_duct(katara)
-        # wait_button_pressed(katara.brick)
+        # vai ao primeiro terço da primeira cor
+        toph.pid_walk(cm=13,vel=-60)
 
-        if not duct_found:
+        while True:
 
-            # vai para o prox terço da cor
+            # alinha com a linha preta e vai um pouco pra frente para estar em cima da cor
+            toph.pid_turn(90)
+            toph.pid_walk(cm=5, vel=-60)
+            toph.forward_while_same_reflection()
+            toph.pid_walk(cm=5, vel=60)
+            time.sleep(0.2)
 
-            katara.forward_while_same_reflection(speed_r=-60, speed_l=-60)
-            katara.pid_turn(-90)
-            katara.pid_walk(cm=26, vel=-60)
+            # funcao find_duct retorna se algum duto foi encontrado 
+            # e o tamanho do arco de circunferencia que este representa
+            duct_found, arc_length = find_duct(toph)
+            
+            if not duct_found:
 
-        # verifica se o duto é coletável
+                # vai para o prox terço da cor
+                toph.forward_while_same_reflection(speed_r=-60, speed_l=-60)
+                toph.pid_turn(-90)
+                toph.pid_walk(cm=26, vel=-60)
 
-        # print(arc_length,accurate_color(katara.color_l.rgb()))
-        if (
-            (accurate_color(katara.color_l.rgb()) == Color.YELLOW and arc_length > 5)
-            or (accurate_color(katara.color_l.rgb()) == Color.RED and arc_length > 10)
-            or (accurate_color(katara.color_l.rgb()) == Color.BLUE and arc_length > 15)
-        ):
+            # verifica se o duto é coletável
+            if (
+                (accurate_color(toph.color_l.rgb()) == Color.YELLOW and arc_length > 5)
+                or (accurate_color(toph.color_l.rgb()) == Color.RED and arc_length > 10)
+                or (accurate_color(toph.color_l.rgb()) == Color.BLUE and arc_length > 15)
+            ):
 
-            # recolhe o duto
+                # recolhe o duto
+                toph.pid_walk(cm=max(1, (duct_found / 10) - 8), vel=50)
+                toph.min_aligner(toph.ultra_front_r.distance)
+                toph.pid_walk(cm=5, vel=30)
+                toph.off_motors()
+                toph.motor_claw.reset_angle(0)
+                toph.motor_claw.run_target(300, 300)
+                
+                # alinha com a linha preta e o buraco para deixar o duto numa posição padrão
+                toph.forward_while_same_reflection(speed_r=-60, speed_l=-60)
+                toph.pid_walk(cm=13, vel=-60)
+                toph.pid_turn(-90)
+                toph.forward_while_same_reflection()
+                toph.pid_align()
+                
+                # deixa o duto a 40cm do buraco
+                toph.pid_walk(cm=40, vel=-60)
+                toph.pid_turn(-90)
+                toph.motor_claw.run_target(300, -10)
+                
+                # alinha com o buraco restaurando a posicao inicial
+                toph.pid_walk(cm=5, vel=-60)
+                toph.pid_turn(180)
+                toph.forward_while_same_reflection()
+                toph.pid_walk(cm=5, vel=-60)
+                toph.pid_turn(-90)
+                toph.forward_while_same_reflection()
+                
+                break
+        
+        # dutos subsequentes (comunicação bluetooth)
 
-            katara.pid_walk(cm=max(1, (duct_found / 10) - 8), vel=50)
-            # wait_button_pressed(katara.brick)
-
-            katara.min_aligner(katara.ultra_front_r.distance)
-            # wait_button_pressed(katara.brick)
-
-            katara.pid_walk(cm=5, vel=30)
-            # wait_button_pressed(katara.brick)
-
-            katara.off_motors()
-            katara.motor_claw.reset_angle(0)
-
-            katara.motor_claw.run_target(300, 300)
-            # wait_button_pressed(katara.brick)
-
-            katara.forward_while_same_reflection(speed_r=-60, speed_l=-60)
-            # wait_button_pressed(katara.brick)
-
-            katara.pid_walk(cm=13, vel=-60)
-            # wait_button_pressed(katara.brick)
-
-            katara.pid_turn(-90)
-            # wait_button_pressed(katara.brick)
-
-            katara.forward_while_same_reflection()
-            katara.pid_align()
-            # wait_button_pressed(katara.brick)
-
-            katara.pid_walk(cm=40, vel=-60)
-            # wait_button_pressed(katara.brick)
-
-            katara.pid_turn(-90)
-            # wait_button_pressed(katara.brick)
-
-            katara.motor_claw.run_target(300, -10)
-            # wait_button_pressed(katara.brick)
-
-            katara.pid_walk(cm=5, vel=-60)
-            # wait_button_pressed(katara.brick)
-
-            katara.pid_turn(180)
-            # wait_button_pressed(katara.brick)
-
-            katara.forward_while_same_reflection()
-            # wait_button_pressed(katara.brick)
-
-            katara.pid_walk(cm=5, vel=-60)
-            # wait_button_pressed(katara.brick)
-
-            katara.pid_turn(-90)
-            # wait_button_pressed(katara.brick)
-
-            katara.forward_while_same_reflection()
-            # wait_button_pressed(katara.brick)
-            break
-    
-    # dutos subsequentes (comunicação bluetooth)
-
-    # num_mbox = NumericMailbox("start", client)
+        # num_mbox = NumericMailbox("start", client)
     
     
 
@@ -317,4 +270,4 @@ def test_hole_reading():
 
 
 if __name__ == "__main__":
-    testing_duct_seek_routine()
+    testing_comunications_locations()

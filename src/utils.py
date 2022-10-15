@@ -60,6 +60,7 @@ def accurate_color(rgb_tuple):
         return Color.BLACK
     if sum(rgb_tuple)<=3:
         return "None"
+    return Color.BLACK
 
 
 def wait_button_pressed(ev3: EV3Brick, button: Button = Button.CENTER):

@@ -272,9 +272,9 @@ class Robot:
         angle,
         mode=1,
         pid: PIDValues = PIDValues(
-            kp=2,
-            ki=0,
-            kd=0.5,
+            kp=1.5,
+            ki=0.1,
+            kd=0.2,
         ),
     ):
         """
@@ -608,12 +608,12 @@ class Robot:
         self,
         vel,
         sensor,
-        array,
+        array=None,
         pid: PIDValues = PIDValues(
-            target=30,  # medir na linha toda vez
-            kp=0.25,
+            target=40,  # medir na linha toda vez
+            kp=0.35,
             ki=0.003,
-            kd=0.4,
+            kd=0.6,
         ),
     ):
         """
@@ -621,6 +621,8 @@ class Robot:
         """
         # TODO: melhorar docstring
         # TODO: conferir se não faz mais sentido colocar essa função no domain
+        if(array==None):
+            array = []
         error = 0
         i_share = 0.0
         elapsed_time = 0
@@ -654,18 +656,20 @@ class Robot:
             self.motor_r.dc(vel + pid_correction * pid_sign)
             self.motor_l.dc(vel - pid_correction * pid_sign)
 
+            color_read = accurate_color(sensor.rgb())
             if (
-                accurate_color(sensor.rgb()) not in array
-                and accurate_color(sensor.rgb()) in valid_colors
+                color_read not in array
+                and color_read in valid_colors
             ):
                 array.append(accurate_color(sensor.rgb()))
-                valid_colors.remove(accurate_color(sensor.rgb()))
 
             if(accurate_color(sensor.rgb())!=None):
                 break_array.append(accurate_color(sensor.rgb()))
             if(len(break_array)>5):
                 break_array.clear()
-            if break_array.count(None) == 5:
+            if break_array.count("None") == 5:
+                break
+            if(len(array)>=2):
                 break
 
         self.motor_r.hold()
