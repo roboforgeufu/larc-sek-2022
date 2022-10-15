@@ -151,4 +151,69 @@ def find_duct(robot: Robot):
             robot.off_motors()
             return False, 0
         
-    
+def duct_seek_routine(robot:Robot):
+    for _ in range(3):
+
+        # alinha com a linha preta e vai um pouco pra frente para estar em cima da cor
+        robot.pid_walk(cm=13, vel=60)
+        robot.pid_turn(-90)
+        robot.pid_walk(cm=5, vel=-60)
+        robot.forward_while_same_reflection()
+        robot.pid_walk(cm=5, vel=60)
+        time.sleep(0.2)
+
+        # funcao find_duct retorna se algum duto foi encontrado
+        # e o tamanho do arco de circunferencia que este representa
+        duct_found, arc_length = find_duct(robot)
+
+        if not duct_found:
+
+            # vai para o prox terço da cor
+            robot.forward_while_same_reflection(speed_r=-60, speed_l=-60)
+            robot.pid_turn(-90)
+            robot.pid_walk(cm=26, vel=-60)
+
+        # verifica se o duto é coletável
+        if (
+            (accurate_color(robot.color_l.rgb()) == Color.YELLOW and arc_length > 5)
+            or (accurate_color(robot.color_l.rgb()) == Color.RED and arc_length > 10)
+            or (
+                accurate_color(robot.color_l.rgb()) == Color.BLUE and arc_length > 15
+            )
+        ):
+
+            # recolhe o duto
+            robot.pid_walk(cm=max(1, (duct_found / 10) - 8), vel=50)
+            robot.min_aligner(robot.ultra_front_r.distance)
+            robot.pid_walk(cm=5, vel=30)
+            robot.off_motors()
+            robot.motor_claw.reset_angle(0)
+            robot.motor_claw.run_target(300, 300)
+
+            # alinha com a linha preta e o buraco para deixar o duto numa posição padrão
+            robot.forward_while_same_reflection(speed_r=-60, speed_l=-60)
+            robot.pid_walk(cm=13, vel=-60)
+            robot.pid_turn(-90)
+            robot.forward_while_same_reflection()
+            robot.pid_align()
+
+            # deixa o duto a 40cm do buraco
+            robot.pid_walk(cm=40, vel=-60)
+            robot.pid_turn(-90)
+            robot.motor_claw.run_target(300, -10)
+
+            # alinha com o buraco restaurando a posicao inicial
+            robot.pid_walk(cm=5, vel=-60)
+            robot.pid_turn(180)
+            robot.forward_while_same_reflection()
+            robot.pid_walk(cm=5, vel=-60)
+            robot.pid_turn(-90)
+            robot.forward_while_same_reflection()
+            robot.pid_walk(cm=5, vel=-60)
+            robot.pid_turn(90)
+            robot.forward_while_same_reflection()
+            robot.pid_walk(cm=10, vel=-60)
+            robot.one_wheel_turn(800, robot.motor_l)
+            robot.pid_line_grabber(100, 2000, robot.color_l)
+
+            break
