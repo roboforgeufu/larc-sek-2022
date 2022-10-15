@@ -18,7 +18,10 @@ WHEEL_DIST = 15.3
 WHEEL_LENGTH = WHEEL_DIAMETER * math.pi  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
 
 # Comunicação
-SERVER = "katara"
+SERVER = "toph"
+
+# Localização
+OBSTACLE_DIST = 150
 
 # Curvas
 PID_TURN_ACCEPTABLE_DEGREE_DIFF = 3

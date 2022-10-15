@@ -133,6 +133,7 @@ class Robot:
         speed_r=50,
         speed_l=50,
         reflection_diff=10,
+        avoid_obstacles=False,
     ):
         """
         Move ambos os motores (de forma individual) até que a intensidade de reflexão
@@ -146,6 +147,12 @@ class Robot:
         stopped_l = False
         stopped_r = False
         while not stopped_l or not stopped_r:
+            if avoid_obstacles:
+                while self.ultra_front.distance() < const.OBSTACLE_DIST:
+                    self.motor_l.dc(30)
+                    self.motor_r.dc(-30)
+                self.off_motors()
+
             diff_ref_r = self.color_r.reflection() - starting_ref_r
             diff_ref_l = self.color_l.reflection() - starting_ref_l
 
@@ -621,7 +628,7 @@ class Robot:
         """
         # TODO: melhorar docstring
         # TODO: conferir se não faz mais sentido colocar essa função no domain
-        if(array==None):
+        if array == None:
             array = []
         error = 0
         i_share = 0.0
@@ -659,10 +666,7 @@ class Robot:
             self.motor_l.dc(vel - pid_correction * pid_sign)
 
             color_read = accurate_color(sensor.rgb())
-            if (
-                color_read not in array
-                and color_read in valid_colors
-            ):
+            if color_read not in array and color_read in valid_colors:
                 array.append(accurate_color(sensor.rgb()))
 
             if accurate_color(sensor.rgb()) != None:
@@ -671,7 +675,7 @@ class Robot:
                 break_array.clear()
             if break_array.count("None") == 5:
                 break
-            if(len(array)>=2):
+            if len(array) >= 2:
                 break
 
         self.motor_r.hold()

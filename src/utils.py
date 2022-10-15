@@ -46,19 +46,39 @@ def accurate_color(rgb_tuple):
     """
     Processamento de cor pra evitar os erros da leitura padrão.
     """
-    if rgb_tuple[0] in range(0,10) and rgb_tuple[1] in range(20,30) and rgb_tuple[2] in range(15,65):
+    if (
+        rgb_tuple[0] in range(0, 10)
+        and rgb_tuple[1] in range(20, 30)
+        and rgb_tuple[2] in range(15, 65)
+    ):
         return Color.BLUE
-    if rgb_tuple[0] in range(0,5) and rgb_tuple[1] in range(15,30) and rgb_tuple[2] in range(0,5):
+    if (
+        rgb_tuple[0] in range(0, 5)
+        and rgb_tuple[1] in range(15, 30)
+        and rgb_tuple[2] in range(0, 5)
+    ):
         return Color.GREEN
-    if rgb_tuple[0] in range(10, 65) and rgb_tuple[1] in range(5, 15) and rgb_tuple[2] in range(0,10):
+    if (
+        rgb_tuple[0] in range(10, 65)
+        and rgb_tuple[1] in range(5, 15)
+        and rgb_tuple[2] in range(0, 10)
+    ):
         return Color.RED
-    if rgb_tuple[0] in range(60, 75) and rgb_tuple[1] in range(30, 65) and rgb_tuple[2] in range(5, 20):
+    if (
+        rgb_tuple[0] in range(60, 75)
+        and rgb_tuple[1] in range(30, 65)
+        and rgb_tuple[2] in range(5, 20)
+    ):
         return Color.YELLOW
     if rgb_tuple[0] > 65 and rgb_tuple[1] > 65 and rgb_tuple[2] > 65:
         return Color.WHITE
-    if rgb_tuple[0] in range(1,15) and rgb_tuple[1] in range(1,15) and rgb_tuple[2] in range(1,15): #linha
+    if (
+        rgb_tuple[0] in range(1, 15)
+        and rgb_tuple[1] in range(1, 15)
+        and rgb_tuple[2] in range(1, 15)
+    ):  # linha
         return Color.BLACK
-    if sum(rgb_tuple)<=3:
+    if sum(rgb_tuple) <= 3:
         return "None"
     return Color.BLACK
 

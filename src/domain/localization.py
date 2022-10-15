@@ -41,7 +41,7 @@ def check_land_position_by_color(robot: Robot) -> str:
 def water_position_routine(robot: Robot):
     """Rotina de identificação de posição no mapa do robô da água."""
     while True:
-        robot.forward_while_same_reflection(60, 80)
+        robot.forward_while_same_reflection(60, 80, avoid_obstacles=True)
         location = check_land_position_by_color(robot)
         ev3_print(location, ev3=robot.brick)
 
@@ -77,10 +77,6 @@ def water_position_routine(robot: Robot):
 
     robot.simple_walk(70, speed_l=50, speed_r=55)
     robot.simple_turn(90, speed=-50)
-    robot.forward_while_same_reflection()
-    robot.simple_walk(10, -50)
-    robot.simple_turn(90)
-    robot.off_motors()
 
 
 def land_position_routine(robot: Robot):
@@ -98,7 +94,7 @@ def land_position_routine(robot: Robot):
             location = check_land_position_by_color(robot)
 
         elif location == "COLOR":
-            robot.pid_walk(cm = 10, vel = -60)
+            robot.pid_walk(cm=10, vel=-60)
             robot.one_wheel_turn(800, robot.motor_r)
             robot.pid_line_grabber(100, 2000, robot.color_r)
             color_order = robot.pid_line_follower_color_id(
@@ -115,9 +111,7 @@ def land_position_routine(robot: Robot):
                 robot.pid_accelerated_walk(-500, 2)
                 robot.pid_turn(190)
                 robot.pid_line_grabber(100, 2000, robot.color_r)
-                robot.pid_line_follower_color_id(
-                    80, robot.color_r
-                )
+                robot.pid_line_follower_color_id(80, robot.color_r)
             break
 
         elif location == "EDGE":
