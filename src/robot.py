@@ -667,9 +667,9 @@ class Robot:
 
             if accurate_color(sensor.rgb()) != None:
                 break_array.append(accurate_color(sensor.rgb()))
-            if len(break_array) > 5:
+            if len(break_array) > 3:
                 break_array.clear()
-            if break_array.count("None") == 5:
+            if break_array.count("None") == 3:
                 break
             if(len(array)>=2):
                 break
