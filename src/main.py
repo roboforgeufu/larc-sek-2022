@@ -27,14 +27,16 @@ from pybricks.messaging import (
     NumericMailbox,
 )
 from pybricks.parameters import Color, Port
-from pybricks.tools import DataLog
+from pybricks.tools import DataLog, wait
 
 import constants as const
 from domain.collect import align_duct_center, duct_ends, find_duct
 from domain.gas_duct import (
     armagedon_the_end_of_times,
     check_hole,
+    duct_deliver,
     duct_follower_turn_routine,
+    duct_measure_hole,
     gas_duct_routine,
 )
 from domain.localization import (
@@ -188,7 +190,7 @@ def testing_duct_seek_routine():
         color_l=Port.S1,
         color_r=Port.S2,
         turn_correction=0.9,
-        debug=True
+        debug=True,
     )
 
     # while True:
@@ -199,8 +201,8 @@ def testing_duct_seek_routine():
     # wait_button_pressed(katara.brick)
 
     land_position_routine(katara)
-    
-    katara.pid_walk(cm=13,vel=-60)
+
+    katara.pid_walk(cm=13, vel=-60)
     # wait_button_pressed(katara.brick)
 
     while True:
@@ -290,12 +292,11 @@ def testing_duct_seek_routine():
             katara.forward_while_same_reflection()
             # wait_button_pressed(katara.brick)
             break
-    
+
     # dutos subsequentes (comunicação bluetooth)
 
     # num_mbox = NumericMailbox("start", client)
-    
-    
+
 
 def test_hole_reading():
     toph = Robot(
@@ -314,11 +315,7 @@ def test_hole_reading():
     )
 
     toph.motor_claw.run_target(300, 300)
-    toph.move_to_distance(70, sensor=toph.ultra_front)
-    toph.motor_claw.run_target(100, 120)
-    toph.move_to_distance(40, sensor=toph.ultra_front)
-    toph.move_to_distance(100, sensor=toph.ultra_front)
-    # gas_duct_routine(toph)
+    gas_duct_routine(toph, delivery=15)
 
 
 if __name__ == "__main__":

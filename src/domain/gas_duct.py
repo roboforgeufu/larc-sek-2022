@@ -1,6 +1,7 @@
 import time
 
 from pybricks.parameters import Color
+from pybricks.tools import wait
 
 import constants as const
 from robot import Robot
@@ -21,10 +22,20 @@ def gas_duct_routine(robot: Robot, delivery=None):
         wall_flw_value = robot.pid_wall_follower(front_sensor=robot.ultra_front)
         if wall_flw_value == 1:
             # Curva pra dentro ou buraco
-            robot.pid_walk(1, vel=30)
+            while robot.infra_side.distance() < const.WALL_SEEN_DIST:
+                robot.motor_l.dc(30)
+                robot.motor_r.dc(30)
+            robot.off_motors()
+            robot.simple_walk(1, 30)
             if check_hole(robot):
                 # buraco
-                duct_measure_hole(robot)
+                measured_value = duct_measure_hole(robot)
+                if delivery is not None:
+                    if delivery == measured_value:
+                        duct_deliver(robot, measured_value)
+                        delivery = None
+                else:
+                    return measured_value
             else:
                 # curva pra dentro
                 duct_follower_turn_routine(robot)
@@ -102,3 +113,37 @@ def armagedon_the_end_of_times(robot: Robot):
         robot.brick.speaker.beep()
         robot.brick.speaker.beep(100)
         robot.brick.speaker.beep(300)
+
+
+def duct_deliver(robot: Robot, measured_value: int):
+    # Abaixa o sensor enquanto faz ré
+    robot.motor_sensor.run_target(300, 600, wait=False)
+    robot.simple_walk((-(measured_value + 2) / 2) - 1.5, speed=30)
+    robot.motor_sensor.run_target(300, 600)
+
+    # Alinha com o sensor do lado
+    robot.min_aligner(robot.infra_side.distance)
+
+    robot.pid_turn(90)
+    robot.min_aligner(robot.ultra_front.distance, acceptable_range=30)
+
+    # Entrega
+    robot.move_to_distance(45, sensor=robot.ultra_front)
+
+    robot.motor_claw.run_target(100, 110)
+
+    robot.pid_walk(1, 30)
+    robot.motor_claw.run_target(100, 95)
+
+    # Afasta levantando a garra e o sensor
+    robot.pid_walk(5, -80)
+    robot.motor_claw.run_target(300, 300, wait=False)
+    robot.motor_sensor.run_target(300, 0, wait=False)
+    robot.move_to_distance(const.WALL_FOLLOWER_FRONT_DIST, sensor=robot.ultra_front)
+
+    # Curva final (e wait da garra e sensor)
+    robot.pid_turn(-90)
+    robot.motor_sensor.run_target(300, 0, wait=True)
+    robot.motor_claw.run_target(300, 300, wait=True)
+
+    robot.simple_walk(((measured_value + 2) / 2) + 4, speed=30)
