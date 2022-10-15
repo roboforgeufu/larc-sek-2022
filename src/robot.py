@@ -17,7 +17,7 @@ from pybricks.parameters import Color, Port
 from pybricks.tools import StopWatch, wait
 
 import constants as const
-from utils import PIDValues, wait_button_pressed, accurate_color
+from utils import PIDValues, accurate_color, wait_button_pressed
 
 
 class Robot:
@@ -648,9 +648,11 @@ class Robot:
             pid_correction = p_share + i_share + d_share
 
             pid_sign = 1 if sensor == self.color_l else -1
-            if ((accurate_color(sensor.rgb())!= Color.WHITE)
-            or (accurate_color(sensor.rgb())!= Color.BLACK)
-            or (accurate_color(sensor.rgb())!= None)):
+            if (
+                (accurate_color(sensor.rgb()) != Color.WHITE)
+                or (accurate_color(sensor.rgb()) != Color.BLACK)
+                or (accurate_color(sensor.rgb()) != None)
+            ):
                 pid_sign = pid_sign * (-1)
 
             self.motor_r.dc(vel + pid_correction * pid_sign)
@@ -663,9 +665,9 @@ class Robot:
             ):
                 array.append(accurate_color(sensor.rgb()))
 
-            if(accurate_color(sensor.rgb())!=None):
+            if accurate_color(sensor.rgb()) != None:
                 break_array.append(accurate_color(sensor.rgb()))
-            if(len(break_array)>5):
+            if len(break_array) > 5:
                 break_array.clear()
             if break_array.count("None") == 5:
                 break
@@ -677,7 +679,9 @@ class Robot:
 
         return array
 
-    def min_aligner(self, min_function, speed: int = 40, max_angle=90):
+    def min_aligner(
+        self, min_function, speed: int = 40, max_angle=90, acceptable_range=0
+    ):
         """
         Alinha os motores usando o mínimo de uma função como alvo.
 
@@ -693,7 +697,11 @@ class Robot:
         infra_reads.extend(second_reads)
 
         min_read = min(i_read for i_read, _, _ in infra_reads)
-        close_reads = [read for read in infra_reads if read[0] == min_read]
+        close_reads = [
+            read
+            for read in infra_reads
+            if read[0] in range(min_read, min_read + acceptable_range + 1)
+        ]
 
         motor_r_mean = sum(motor_r_angle for _, motor_r_angle, _ in close_reads) / len(
             close_reads

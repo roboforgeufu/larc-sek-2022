@@ -27,14 +27,16 @@ from pybricks.messaging import (
     NumericMailbox,
 )
 from pybricks.parameters import Color, Port
-from pybricks.tools import DataLog
+from pybricks.tools import DataLog, wait
 
 import constants as const
 from domain.collect import align_duct_center, duct_ends, find_duct
 from domain.gas_duct import (
     armagedon_the_end_of_times,
     check_hole,
+    duct_deliver,
     duct_follower_turn_routine,
+    duct_measure_hole,
     gas_duct_routine,
 )
 from domain.localization import (
@@ -266,7 +268,8 @@ def test_hole_reading():
         turn_correction=const.TOPH_TURN_CORRECTION,
     )
 
-    gas_duct_routine(toph)
+    toph.motor_claw.run_target(300, 300)
+    gas_duct_routine(toph, delivery=15)
 
 
 if __name__ == "__main__":
