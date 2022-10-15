@@ -30,7 +30,7 @@ from pybricks.parameters import Color, Port
 from pybricks.tools import DataLog, wait
 
 import constants as const
-from domain.collect import align_duct_center, duct_ends, find_duct
+from domain.collect import align_duct_center, duct_ends, find_duct, duct_seek_routine
 from domain.gas_duct import (
     armagedon_the_end_of_times,
     check_hole,
@@ -86,103 +86,67 @@ def main():
                 color_l=Port.S1,
                 color_r=Port.S2,
                 turn_correction=0.9,
-                debug=False,
+                debug=True,
             )
         )
 
 
 def land_main(toph: Robot):
 
-    # while True:
-    #     toph.ev3_print(toph.color_l.rgb(),accurate_color(toph.color_l.rgb()),clear=True)
-
     """Main da Toph"""
+    
+    # # conexao entre os bricks por bluetooth
+    # toph.ev3_print(get_hostname())
+    # server = BluetoothMailboxServer()
+    # toph.ev3_print("SERVER: waiting for connection...")
+    # server.wait_for_connection()
+    # toph.ev3_print("SERVER: connected!")
 
-    toph.ev3_print(get_hostname)
-    server = BluetoothMailboxServer()
-    toph.ev3_print("SERVER: waiting for connection...")
-    server.wait_for_connection()
-    toph.ev3_print("SERVER: connected!")
+    # # espera a katara sair da meeting area
+    # # antes de comecar a rotina de localizacao
+    # logic_mbox = LogicMailbox("start", server)
 
-    # espera a katara sair da meeting area
-    # antes de comecar a rotina de localizacao
-    logic_mbox = LogicMailbox("start", server)
-    logic_mbox.send(True)
-    logic_mbox.wait()
-    start = logic_mbox.read()
-    toph.ev3_print(start)
+    # # espera a katara falar q conectou
+    # logic_mbox.wait()
+    # logic_mbox.send(True)
 
-    if start:
+    # # katara desceu a rampa
+    # logic_mbox.wait()
 
-        # algoritmo de localizacao terrestre
-        land_position_routine(toph)
+    # algoritmo de localizacao terrestre
+    color_order = land_position_routine(toph)
+    valid_colors = [Color.YELLOW,Color.RED,Color.BLUE]
+    for color in valid_colors:
+        if(color not in color_order):
+            color_order.append(color)
+    ev3_print(color_order)
 
-        # vai ao primeiro terço da primeira cor
-        toph.pid_walk(cm=13, vel=-60)
+    # vai ao primeiro terço da primeira cor
+    toph.pid_walk(cm=13, vel=-60)
+    toph.pid_turn(90)
+    toph.pid_walk(cm=10, vel=-60)
+    toph.forward_while_same_reflection()
+    toph.pid_walk(cm=8, vel=-60)
+    toph.one_wheel_turn(800, toph.motor_l)
 
-        while True:
+    # dutos subsequentes (comunicação bluetooth)
 
-            # alinha com a linha preta e vai um pouco pra frente para estar em cima da cor
-            toph.pid_turn(90)
-            toph.pid_walk(cm=5, vel=-60)
-            toph.forward_while_same_reflection()
-            toph.pid_walk(cm=5, vel=60)
-            time.sleep(0.2)
+    # num_mbox = NumericMailbox("start", server)
+    while True:
 
-            # funcao find_duct retorna se algum duto foi encontrado
-            # e o tamanho do arco de circunferencia que este representa
-            duct_found, arc_length = find_duct(toph)
+        # num_mbox.wait()
+        # num = num_mbox.read()
+        num = 20
 
-            if not duct_found:
-
-                # vai para o prox terço da cor
-                toph.forward_while_same_reflection(speed_r=-60, speed_l=-60)
-                toph.pid_turn(-90)
-                toph.pid_walk(cm=26, vel=-60)
-
-            # verifica se o duto é coletável
-            if (
-                (accurate_color(toph.color_l.rgb()) == Color.YELLOW and arc_length > 5)
-                or (accurate_color(toph.color_l.rgb()) == Color.RED and arc_length > 10)
-                or (
-                    accurate_color(toph.color_l.rgb()) == Color.BLUE and arc_length > 15
-                )
-            ):
-
-                # recolhe o duto
-                toph.pid_walk(cm=max(1, (duct_found / 10) - 8), vel=50)
-                toph.min_aligner(toph.ultra_front_r.distance)
-                toph.pid_walk(cm=5, vel=30)
-                toph.off_motors()
-                toph.motor_claw.reset_angle(0)
-                toph.motor_claw.run_target(300, 300)
-
-                # alinha com a linha preta e o buraco para deixar o duto numa posição padrão
-                toph.forward_while_same_reflection(speed_r=-60, speed_l=-60)
-                toph.pid_walk(cm=13, vel=-60)
-                toph.pid_turn(-90)
-                toph.forward_while_same_reflection()
-                toph.pid_align()
-
-                # deixa o duto a 40cm do buraco
-                toph.pid_walk(cm=40, vel=-60)
-                toph.pid_turn(-90)
-                toph.motor_claw.run_target(300, -10)
-
-                # alinha com o buraco restaurando a posicao inicial
-                toph.pid_walk(cm=5, vel=-60)
-                toph.pid_turn(180)
-                toph.forward_while_same_reflection()
-                toph.pid_walk(cm=5, vel=-60)
-                toph.pid_turn(-90)
-                toph.forward_while_same_reflection()
-
-                break
-
-        # dutos subsequentes (comunicação bluetooth)
-
-        # num_mbox = NumericMailbox("start", client)
-
+        if(num==10):
+            toph.pid_line_follower_color_id(80,toph.color_l,break_color=Color.YELLOW)
+            duct_seek_routine(toph)
+        if(num==15):
+            toph.pid_line_follower_color_id(80,toph.color_l,break_color=Color.RED)
+            duct_seek_routine(toph)
+        if(num==20):
+            toph.pid_line_follower_color_id(80,toph.color_l,break_color=Color.BLUE)
+            duct_seek_routine(toph)
 
 def water_main(katara: Robot):
     """Main da Katara"""

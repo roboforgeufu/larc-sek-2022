@@ -104,7 +104,7 @@ def land_position_routine(robot: Robot):
             robot.one_wheel_turn(800, robot.motor_r)
             robot.pid_line_grabber(100, 2000, robot.color_r)
             color_order = robot.pid_line_follower_color_id(
-                80, robot.color_r, color_order
+                80, robot.color_r
             )
             if len(color_order) < 2:
                 robot.pid_accelerated_walk(-500, 2)
@@ -131,3 +131,5 @@ def land_position_routine(robot: Robot):
             robot.pid_accelerated_walk(-500, 3)
             robot.forward_while_same_reflection(100, 80, 10)
             location = check_land_position_by_color(robot)
+
+    return color_order
