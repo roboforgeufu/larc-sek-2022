@@ -69,12 +69,16 @@ def between(value, min_value, max_value):
 
 
 def accurate_color(rgb_tuple):
-    """
+    """ 
     Processamento de cor pra evitar os erros da leitura padrão.
     """
     red_value = rgb_tuple[0]
     green_value = rgb_tuple[1]
     blue_value = rgb_tuple[2]
+
+    max_value = 65
+
+    
 
     red_normalized_value = normalize_color(red_value)
     green_normalized_value = normalize_color(green_value)

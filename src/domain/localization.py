@@ -89,17 +89,20 @@ def land_position_routine(robot: Robot):
     """Rotina de identificação de posição no mapa do robô da terra."""
 
     color_order = []  # type: ignore
-    robot.forward_while_same_reflection(80, 100, 10)
-    location = check_land_position_by_color(robot)
     while True:
+        robot.forward_while_same_reflection(80, 80, 10)
+        robot.pid_walk(cm=2, vel=-60)
+        robot.pid_align()
+        robot.pid_walk(cm=3, vel=40)
+        location = check_land_position_by_color(robot)
+
         if location == "RAMP":
-            robot.pid_align()
+
             robot.pid_accelerated_walk(-500, 3)
             robot.pid_turn(180)
-            robot.forward_while_same_reflection(80, 80)
-            location = check_land_position_by_color(robot)
 
         elif location == "COLOR":
+            
             robot.pid_walk(cm=8, vel=-60)
             robot.one_wheel_turn(800, robot.motor_r)
 
@@ -123,16 +126,11 @@ def land_position_routine(robot: Robot):
             break
 
         elif location == "EDGE":
-            robot.pid_align()
             robot.pid_accelerated_walk(-500, 3)
             robot.pid_turn(-90)
-            robot.forward_while_same_reflection(80, 80, 10)
-            location = check_land_position_by_color(robot)
 
         else:
             robot.pid_accelerated_walk(-500, 3)
-            robot.forward_while_same_reflection(100, 80, 10)
-            location = check_land_position_by_color(robot)
 
     return color_order
 
