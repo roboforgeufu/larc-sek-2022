@@ -57,12 +57,12 @@ def accurate_color(rgb_tuple):
     green_normalized_value = normalize_color(green_value)
     blue_normalized_value = normalize_color(blue_value)
 
-    
+
     if (
         red_value in range(0, 10)
         and green_value in range(20, 30)
         and blue_value in range(15, 65)
-    )
+    ):
         return Color.BLUE
     if (
         red_value in range(0, 5)
