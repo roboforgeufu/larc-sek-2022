@@ -276,7 +276,7 @@ class Robot:
         angle,
         mode=1,
         pid: PIDValues = PIDValues(
-            kp=1.5,
+            kp=0.7,
             ki=0.1,
             kd=0.2,
         ),
@@ -604,8 +604,14 @@ class Robot:
             self.motor_r.run(vel + (pid_correction * pid_sign))
             self.motor_l.run(vel - (pid_correction * pid_sign))
 
+            color_read = accurate_color(sensor.rgb())
+
             if self.stopwatch.time() > time:
                 break
+
+            if color_read == "None":
+                break
+
         self.off_motors()
 
     def pid_line_follower_color_id(
@@ -615,10 +621,10 @@ class Robot:
         array=None,
         break_color=None,
         pid: PIDValues = PIDValues(
-            target=40,  # medir na linha toda vez
+            target=50,  # medir na linha toda vez
             kp=0.35,
-            ki=0.003,
-            kd=0.6,
+            ki=0.002,
+            kd=0.8,
         ),
     ):
         """
@@ -669,9 +675,9 @@ class Robot:
 
             if accurate_color(sensor.rgb()) != None:
                 break_array.append(accurate_color(sensor.rgb()))
-            if len(break_array) > 3:
+            if len(break_array) > 2:
                 break_array.clear()
-            if break_array.count("None") == 3:
+            if break_array.count("None") == 2:
                 break
 
             if break_color == None:
