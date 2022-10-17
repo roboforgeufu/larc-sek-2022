@@ -50,6 +50,7 @@ from utils import (
     accurate_color,
     ev3_print,
     get_hostname,
+    normalize_color,
     wait_button_pressed,
 )
 
@@ -200,6 +201,40 @@ def test_katara():
     water_comeback_routine(katara)
 
 
+def white_calibration():
+    robot = Robot(
+        wheel_diameter=const.WHEEL_DIAMETER,
+        wheel_distance=const.WHEEL_DIST,
+        color_l=Port.S1,
+        color_r=Port.S2,
+        debug=True,
+    )
+
+    robot.brick.speaker.beep()
+    color = ["BRANCO"]
+    for c in color:
+        robot.ev3_print(c)
+        color_array = []
+
+        logger = DataLog("WHITE_MAX_VALUE", name="log_" + c)
+        wait_button_pressed(robot.brick)
+
+        for _ in range(200):
+            color_array.append(robot.color_l.rgb())
+            color_array.append(robot.color_r.rgb())
+            wait(10)
+        robot.brick.speaker.beep()
+        # save color array to file
+        x_max = max([x for x, y, z in color_array])
+        y_max = max([y for x, y, z in color_array])
+        z_max = max([z for x, y, z in color_array])
+
+        # get the highest value between the maxes
+        max_value = max(x_max, y_max, z_max)
+        logger.log(max_value)
+        return max_value
+
+
 def color_calibration():
     robot = Robot(
         wheel_diameter=const.WHEEL_DIAMETER,
@@ -210,17 +245,21 @@ def color_calibration():
     )
 
     robot.brick.speaker.beep()
+    max_value = white_calibration()
     color = ["BRANCO", "PRETO", "VERDE", "AZUL", "VERMELHO", "AMARELO", "BURACO"]
     for c in color:
         robot.ev3_print(c)
         logger = DataLog("rgb_left", "rgb_right", name="log_" + c)
 
         wait_button_pressed(robot.brick)
-        for _ in range(100):
-            logger.log(robot.color_l.rgb(), robot.color_r.rgb())
+        for _ in range(200):
+            logger.log(
+                normalize_color(robot.color_l.rgb(), max_value),
+                normalize_color(robot.color_r.rgb(), max_value),
+            )
             wait(10)
         robot.brick.speaker.beep()
 
 
 if __name__ == "__main__":
-    test_katara()
+    white_calibration()
