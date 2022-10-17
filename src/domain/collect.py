@@ -1,5 +1,5 @@
-import time
 import math
+import time
 
 from pybricks.parameters import Color
 from pybricks.tools import wait
@@ -7,7 +7,6 @@ from pybricks.tools import wait
 import constants as const
 from robot import Robot
 from utils import accurate_color, ev3_print
-
 
 # def duct_ends(
 #     robot: Robot,
@@ -221,3 +220,11 @@ def duct_seek_routine(robot: Robot):
             robot.pid_line_grabber(100, 2000, robot.color_l)
 
             break
+
+
+def duct_seek_routine_new(robot: Robot):
+
+    robot.walk_to_hole(mode=3)
+    wait(50)
+    print(robot.hole_measurement())
+    robot.off_motors()

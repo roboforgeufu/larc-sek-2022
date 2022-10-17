@@ -607,12 +607,12 @@ class Robot:
             self.motor_r.run(vel + (pid_correction * pid_sign))
             self.motor_l.run(vel - (pid_correction * pid_sign))
 
-            color_read = accurate_color(sensor.rgb())
+            ref_read = sensor.reflection()
 
             if self.stopwatch.time() > time:
                 break
 
-            if color_read == "None":
+            if ref_read == "None":
                 break
 
         self.off_motors()
@@ -937,6 +937,8 @@ class Robot:
         """
         Modo 1: ré até deixar de ver o buraco
         Modo 2: pra frente até ver o buraco
+        Modo 3: frente até deixar de ver (!p/ terra)
+        Modo 4: ré até ver (!p/ terra)
         """
         pid.kp = 3
         pid.ki = 0.1
@@ -988,5 +990,45 @@ class Robot:
                 pid_correction = p_share + i_share + d_share
                 self.motor_r.dc(vel - pid_correction)
                 self.motor_l.dc(vel + pid_correction)
+
+        elif mode == 3:
+            while self.infra_side.distance() > 70:
+                prev_error = error
+                error = self.motor_r.angle() - self.motor_l.angle()
+                p_share = error * pid.kp
+
+                if abs(error) < 3:
+                    i_share = i_share + (error * pid.ki)
+
+                prev_elapsed_time = elapsed_time
+                wait(1)
+                elapsed_time = self.stopwatch.time()
+                d_share = ((error - prev_error) * pid.kd) / (
+                    elapsed_time - prev_elapsed_time
+                )
+
+                pid_correction = p_share + i_share + d_share
+                self.motor_r.dc(vel - pid_correction)
+                self.motor_l.dc(vel + pid_correction)
+
+        elif mode == 4:
+            while self.infra_side.distance() < 70:
+                prev_error = error
+                error = self.motor_r.angle() - self.motor_l.angle()
+                p_share = error * pid.kp
+
+                if abs(error) < 3:
+                    i_share = i_share + (error * pid.ki)
+
+                prev_elapsed_time = elapsed_time
+                wait(1)
+                elapsed_time = self.stopwatch.time()
+                d_share = ((error - prev_error) * pid.kd) / (
+                    elapsed_time - prev_elapsed_time
+                )
+
+                pid_correction = p_share + i_share + d_share
+                self.motor_r.dc(-(vel - pid_correction))
+                self.motor_l.dc(-(vel + pid_correction))
 
         self.off_motors()

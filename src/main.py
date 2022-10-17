@@ -30,7 +30,13 @@ from pybricks.parameters import Color, Port
 from pybricks.tools import DataLog, wait
 
 import constants as const
-from domain.collect import align_duct_center, duct_ends, duct_seek_routine, find_duct
+from domain.collect import (
+    align_duct_center,
+    duct_ends,
+    duct_seek_routine,
+    duct_seek_routine_new,
+    find_duct,
+)
 from domain.gas_duct import (
     armagedon_the_end_of_times,
     check_hole,
@@ -84,6 +90,7 @@ def main():
                 motor_r=Port.C,
                 motor_l=Port.B,
                 ultra_front_r=Port.S4,
+                infra_side=Port.S3,
                 color_l=Port.S1,
                 color_r=Port.S2,
                 turn_correction=0.9,
@@ -114,6 +121,16 @@ def land_main(toph: Robot):
     # logic_mbox.wait()
 
     # algoritmo de localizacao terrestre
+
+    # color_order = []
+    # wait_button_pressed(toph.brick)
+    # toph.pid_line_grabber(100, 2000, toph.color_r)
+    # color_order = toph.pid_line_follower_color_id(80, toph.color_r, color_order)
+    # wait_button_pressed(toph.brick)
+
+    duct_seek_routine_new(toph)
+    wait_button_pressed(toph.brick)
+
     color_order = land_position_routine(toph)
     valid_colors = [Color.YELLOW, Color.RED, Color.BLUE]
     for color in valid_colors:
