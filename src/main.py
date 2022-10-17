@@ -92,32 +92,25 @@ def main():
 
 
 def land_main(toph: Robot):
-
-    toph.pid_turn(45)
-    wait_button_pressed(toph.brick)
-    toph.pid_turn(90)
-    wait_button_pressed(toph.brick)
-    toph.pid_turn(-180)
-    wait_button_pressed(toph.brick)
     """Main da Toph"""
 
-    # # conexao entre os bricks por bluetooth
-    # toph.ev3_print(get_hostname())
-    # server = BluetoothMailboxServer()
-    # toph.ev3_print("SERVER: waiting for connection...")
-    # server.wait_for_connection()
-    # toph.ev3_print("SERVER: connected!")
+    # conexao entre os bricks por bluetooth
+    toph.ev3_print(get_hostname())
+    server = BluetoothMailboxServer()
+    toph.ev3_print("SERVER: waiting for connection...")
+    server.wait_for_connection()
+    toph.ev3_print("SERVER: connected!")
 
-    # # espera a katara sair da meeting area
-    # # antes de comecar a rotina de localizacao
-    # logic_mbox = LogicMailbox("start", server)
+    # espera a katara sair da meeting area
+    # antes de comecar a rotina de localizacao
+    logic_mbox = LogicMailbox("start", server)
 
-    # # espera a katara falar q conectou
-    # logic_mbox.wait()
-    # logic_mbox.send(True)
+    # espera a katara falar q conectou
+    logic_mbox.wait()
+    logic_mbox.send(True)
 
-    # # katara desceu a rampa
-    # logic_mbox.wait()
+    # katara desceu a rampa
+    logic_mbox.wait()
 
     # algoritmo de localizacao terrestre
     color_order = land_position_routine(toph)
@@ -138,25 +131,23 @@ def land_main(toph: Robot):
 
     # dutos subsequentes (comunicação bluetooth)
 
-    # num_mbox = NumericMailbox("start", server)
+    num_mbox = NumericMailbox("measures", server)
     while True:
 
-        # num_mbox.wait()
-        # num = num_mbox.read()
-        num = 10
+        num_mbox.wait()
+        num = num_mbox.read()
 
         if num == 10:
             toph.pid_line_grabber(100, 2000, toph.color_l)
             toph.pid_line_follower_color_id(80, toph.color_l, break_color=Color.YELLOW)
-            duct_seek_routine(toph)
         if num == 15:
             toph.pid_line_grabber(100, 2000, toph.color_l)
             toph.pid_line_follower_color_id(80, toph.color_l, break_color=Color.RED)
-            duct_seek_routine(toph)
         if num == 20:
             toph.pid_line_grabber(100, 2000, toph.color_l)
             toph.pid_line_follower_color_id(80, toph.color_l, break_color=Color.BLUE)
-            duct_seek_routine(toph)
+
+        duct_seek_routine(toph)
 
 
 def water_main(katara: Robot):
@@ -167,6 +158,8 @@ def water_main(katara: Robot):
     ev3_print("CLIENT: establishing connection...")
     client.connect(const.SERVER)
     ev3_print("CLIENT: connected!")
+
+    numeric_mbox = NumericMailbox("measures", client)
 
     katara.ev3_print("1")
     logic_mbox = LogicMailbox("start", client)
@@ -182,7 +175,8 @@ def water_main(katara: Robot):
     # Avisa toph que está fora da meeting area
     logic_mbox.send(True)
 
-    gas_duct_routine(katara)
+    measured_value = gas_duct_routine(katara)
+    numeric_mbox.send(measured_value)
 
 
 def test_katara():
@@ -201,9 +195,32 @@ def test_katara():
         turn_correction=const.KATARA_TURN_CORRECTION,
     )
 
-    water_position_routine(katara)
-    gas_duct_routine(katara)
+    # water_position_routine(katara)
+    # gas_duct_routine(katara)
+    water_comeback_routine(katara)
+
+
+def color_calibration():
+    robot = Robot(
+        wheel_diameter=const.WHEEL_DIAMETER,
+        wheel_distance=const.WHEEL_DIST,
+        color_l=Port.S1,
+        color_r=Port.S2,
+        debug=True,
+    )
+
+    robot.brick.speaker.beep()
+    color = ["BRANCO", "PRETO", "VERDE", "AZUL", "VERMELHO", "AMARELO", "BURACO"]
+    for c in color:
+        robot.ev3_print(c)
+        logger = DataLog("rgb_left", "rgb_right", name="log_" + c)
+
+        wait_button_pressed(robot.brick)
+        for _ in range(100):
+            logger.log(robot.color_l.rgb(), robot.color_r.rgb())
+            wait(10)
+        robot.brick.speaker.beep()
 
 
 if __name__ == "__main__":
-    main()
+    test_katara()

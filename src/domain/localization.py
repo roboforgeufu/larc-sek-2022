@@ -131,3 +131,11 @@ def land_position_routine(robot: Robot):
             location = check_land_position_by_color(robot)
 
     return color_order
+
+
+def water_comeback_routine(robot: Robot):
+    robot.pid_turn(-90)
+    robot.forward_while_same_reflection()
+    robot.pid_walk(5, -80)
+    robot.pid_turn(-90)
+    robot.forward_while_same_reflection()
