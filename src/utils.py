@@ -60,7 +60,7 @@ def between(value, min_value, max_value):
     """
     Verifica se um valor está entre um intervalo.
     """
-    error_margin = 0.1
+    error_margin = 0.33
     return (
         min_value - error_margin * min_value
         <= value
@@ -99,9 +99,9 @@ def accurate_color(rgb_tuple):
     ):
         return Color.YELLOW
     elif (
-        between(red_normalized_value, 0.04, 0.06)
-        and between(green_normalized_value, 0.05, 0.1)
-        and between(blue_normalized_value, 0, 0.01)
+        between(red_normalized_value, 0.01, 0.2)
+        and between(green_normalized_value, 0.01, 0.2)
+        and between(blue_normalized_value, 0.01, 0.05)
     ):
         return Color.BLACK
     elif (
