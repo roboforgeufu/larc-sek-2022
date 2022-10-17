@@ -120,9 +120,9 @@ def land_main(toph: Robot):
     # # katara desceu a rampa
     # logic_mbox.wait()
 
-    duct_seek_routine_new(toph,Color.RED)
-    wait_button_pressed(toph.brick)
-    
+    #duct_seek_routine_new(toph,Color.RED)
+    #wait_button_pressed(toph.brick)
+
     # algoritmo de localizacao terrestre
     color_order = land_position_routine(toph)
     valid_colors = [Color.YELLOW, Color.RED, Color.BLUE]
@@ -130,15 +130,16 @@ def land_main(toph: Robot):
         if color not in color_order:
             color_order.append(color)
     ev3_print(color_order)
-    #termina com o sensor no buraco na primeira cor da esquerda p/ a direita
+    # termina com o sensor no buraco na primeira cor da esquerda p/ a direita
 
-    # vai ao primeiro terço da primeira cor
+    # manobras
     toph.pid_walk(cm=13, vel=-60)
     toph.pid_turn(90)
     toph.pid_walk(cm=10, vel=-60)
     toph.forward_while_same_reflection()
     toph.pid_walk(cm=7, vel=-60)
     toph.one_wheel_turn(700, toph.motor_l)
+    # termina com o sensor esquerdo sobre a linha preta da primeira cor
 
     # dutos subsequentes (comunicação bluetooth)
 
