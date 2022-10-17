@@ -42,7 +42,7 @@ def get_hostname() -> str:
     return stream.read().split()[0]
 
 
-def normalize_color(color_value, max_value=70):
+def normalize_color(color_value, max_value=65):
     """
     Normalização dos valores de cor lidos.
     """
