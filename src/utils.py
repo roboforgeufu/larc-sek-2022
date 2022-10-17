@@ -87,9 +87,9 @@ def accurate_color(rgb_tuple):
     ):
         return Color.BLUE
     elif (
-        between(red_normalized_value, 0.03, 0.07)
-        and between(green_normalized_value, 0.32, 0.41)
-        and between(blue_normalized_value, 0.05, 0.14)
+        green_normalized_value != 0
+        and red_normalized_value / green_normalized_value <= 0.5
+        and blue_normalized_value / green_normalized_value <= 0.5
     ):
         return Color.GREEN
     elif (
