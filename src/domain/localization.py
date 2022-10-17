@@ -4,6 +4,7 @@ Módulo para funções que envolvem o problema da localização/mapeamento no ma
 
 from pybricks.parameters import Color
 
+import constants as const
 from robot import Robot
 from utils import accurate_color, ev3_print, wait_button_pressed
 
@@ -102,6 +103,10 @@ def land_position_routine(robot: Robot):
         elif location == "COLOR":
             robot.pid_walk(cm=8, vel=-60)
             robot.one_wheel_turn(800, robot.motor_r)
+
+            # Curva com um sensor até a linha
+            # Curva com um sensor até depois da linha
+
             robot.pid_line_grabber(100, 2000, robot.color_r)
             color_order = robot.pid_line_follower_color_id(80, robot.color_r)
             if len(color_order) < 2:
@@ -135,7 +140,18 @@ def land_position_routine(robot: Robot):
 
 def water_comeback_routine(robot: Robot):
     robot.pid_turn(-90)
-    robot.forward_while_same_reflection()
-    robot.pid_walk(5, -80)
+    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
+    robot.pid_walk(10, -80)
     robot.pid_turn(-90)
-    robot.forward_while_same_reflection()
+    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
+
+    robot.pid_walk(40, -80)
+    robot.pid_turn(90)
+    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
+
+    robot.motor_claw.run_target(300, 0, wait=False)
+    robot.pid_walk(30)
+    robot.motor_claw.run_target(300, 0)
+
+    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
+    robot.pid_walk(20)

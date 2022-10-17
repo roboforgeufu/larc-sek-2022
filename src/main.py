@@ -42,6 +42,7 @@ from domain.gas_duct import (
 from domain.localization import (
     check_land_position_by_color,
     land_position_routine,
+    water_comeback_routine,
     water_position_routine,
 )
 from robot import Robot
@@ -94,23 +95,23 @@ def main():
 def land_main(toph: Robot):
     """Main da Toph"""
 
-    # conexao entre os bricks por bluetooth
-    toph.ev3_print(get_hostname())
-    server = BluetoothMailboxServer()
-    toph.ev3_print("SERVER: waiting for connection...")
-    server.wait_for_connection()
-    toph.ev3_print("SERVER: connected!")
+    # # conexao entre os bricks por bluetooth
+    # toph.ev3_print(get_hostname())
+    # server = BluetoothMailboxServer()
+    # toph.ev3_print("SERVER: waiting for connection...")
+    # server.wait_for_connection()
+    # toph.ev3_print("SERVER: connected!")
 
-    # espera a katara sair da meeting area
-    # antes de comecar a rotina de localizacao
-    logic_mbox = LogicMailbox("start", server)
+    # # espera a katara sair da meeting area
+    # # antes de comecar a rotina de localizacao
+    # logic_mbox = LogicMailbox("start", server)
 
-    # espera a katara falar q conectou
-    logic_mbox.wait()
-    logic_mbox.send(True)
+    # # espera a katara falar q conectou
+    # logic_mbox.wait()
+    # logic_mbox.send(True)
 
-    # katara desceu a rampa
-    logic_mbox.wait()
+    # # katara desceu a rampa
+    # logic_mbox.wait()
 
     # algoritmo de localizacao terrestre
     color_order = land_position_routine(toph)
@@ -131,11 +132,12 @@ def land_main(toph: Robot):
 
     # dutos subsequentes (comunicação bluetooth)
 
-    num_mbox = NumericMailbox("measures", server)
+    # num_mbox = NumericMailbox("measures", server)
     while True:
 
-        num_mbox.wait()
-        num = num_mbox.read()
+        # num_mbox.wait()
+        # num = num_mbox.read()
+        num = 10
 
         if num == 10:
             toph.pid_line_grabber(100, 2000, toph.color_l)
@@ -195,8 +197,15 @@ def test_katara():
         turn_correction=const.KATARA_TURN_CORRECTION,
     )
 
-    # water_position_routine(katara)
-    # gas_duct_routine(katara)
+    katara.motor_claw.run_target(300, 300)
+    wait_button_pressed(katara.brick)
+
+    water_position_routine(katara)
+    wait_button_pressed(katara.brick)
+
+    gas_duct_routine(katara)
+    wait_button_pressed(katara.brick)
+
     water_comeback_routine(katara)
 
 
@@ -223,4 +232,4 @@ def color_calibration():
 
 
 if __name__ == "__main__":
-    test_katara()
+    main()
