@@ -953,6 +953,50 @@ class Robot:
         degrees = (self.motor_l.angle() + self.motor_r.angle()) / 2
         return (degrees / 360) * WHEEL_LENGTH
 
+    def duct_measurement(
+        self,
+        vel=50,
+        pid: PIDValues = PIDValues(
+            target=70,
+            kp=3,
+            ki=0.1,
+            kd=5,
+        ),
+    ):
+
+        elapsed_time = 0
+        i_share = 0
+        error = 0
+        self.motor_l.reset_angle(0)
+        self.motor_r.reset_angle(0)
+        self.stopwatch.reset()
+        while self.infra_side.distance() < pid.target:
+
+            prev_error = error
+            error = self.motor_r.angle() - self.motor_l.angle()
+
+            p_share = error * pid.kp
+            if abs(error) < 3:
+                i_share = i_share + (error * pid.ki)
+            prev_elapsed_time = elapsed_time
+            wait(1)
+            elapsed_time = self.stopwatch.time()
+            d_share = ((error - prev_error) * pid.kd) / (
+                elapsed_time - prev_elapsed_time
+            )
+
+            pid_correction = p_share + i_share + d_share
+            self.motor_r.dc(vel - pid_correction)
+            self.motor_l.dc(vel + pid_correction)
+        self.motor_l.hold()
+        self.motor_r.hold()
+
+        WHEEL_LENGTH = (
+            const.WHEEL_DIAMETER * math.pi
+        )  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
+        degrees = (self.motor_l.angle() + self.motor_r.angle()) / 2
+        return (degrees / 360) * WHEEL_LENGTH
+
     def walk_to_hole(
         self,
         vel=50,
@@ -1057,7 +1101,7 @@ class Robot:
                 )
 
                 pid_correction = p_share + i_share + d_share
-                self.motor_r.dc(-(vel - pid_correction))
-                self.motor_l.dc(-(vel + pid_correction))
+                self.motor_r.dc(-(vel + pid_correction))
+                self.motor_l.dc(-(vel - pid_correction))
 
         self.off_motors()
