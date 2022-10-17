@@ -122,8 +122,8 @@ def land_main(toph: Robot):
     # # katara desceu a rampa
     # logic_mbox.wait()
 
-    #duct_seek_routine_new(toph,Color.RED)
-    #wait_button_pressed(toph.brick)
+    # duct_seek_routine_new(toph,Color.RED)
+    # wait_button_pressed(toph.brick)
 
     while True:
 
@@ -173,7 +173,7 @@ def land_main(toph: Robot):
             index = color_order.index(Color.BLUE)
 
         color_order.append(None)
-        duct_seek_routine_new(toph,color_order[index+1])
+        duct_seek_routine_new(toph, color_order[index + 1])
 
 
 def water_main(katara: Robot):
@@ -279,24 +279,35 @@ def color_calibration():
         wheel_distance=const.WHEEL_DIST,
         color_l=Port.S1,
         color_r=Port.S2,
+        motor_r=Port.C,
+        motor_l=Port.B,
+        ultra_front=Port.S4,
         debug=True,
     )
 
     robot.brick.speaker.beep()
-    max_value = white_calibration()
-    color = ["BRANCO", "PRETO", "VERDE", "AZUL", "VERMELHO", "AMARELO", "BURACO"]
+    color = ["PRETO", "VERDE", "BURACO"]
     for c in color:
         robot.ev3_print(c)
-        logger = DataLog("rgb_left", "rgb_right", name="log_" + c)
+        logger = DataLog("rgb_left", "rgb_right", name="log_recal_" + c)
 
         wait_button_pressed(robot.brick)
-        for _ in range(200):
-            logger.log(
-                normalize_color(robot.color_l.rgb(), max_value),
-                normalize_color(robot.color_r.rgb(), max_value),
+        for _ in range(20):
+            robot.forward_while_same_reflection(
+                80, 100, avoid_obstacles=True, reflection_diff=20
             )
-            wait(10)
-        robot.brick.speaker.beep()
+            robot.pid_walk(2, -30)
+            robot.pid_align()
+            robot.pid_walk(1, 30)
+            robot.brick.speaker.beep()
+
+            robot.ev3_print(robot.color_l.rgb(), robot.color_r.rgb())
+            logger.log(
+                robot.color_l.rgb(),
+                robot.color_l.rgb(),
+            )
+            robot.pid_walk(5, -30)
+        robot.brick.speaker.beep(300, 200)
 
 
 def color_guessing():
@@ -311,8 +322,16 @@ def color_guessing():
 
     robot.brick.speaker.beep()
     while not robot.brick.buttons.pressed():
-        robot.ev3_print(accurate_color(robot.color_l.rgb()))
-        robot.ev3_print(accurate_color(robot.color_r.rgb()))
+        robot.ev3_print(
+            robot.color_l.rgb(),
+            normalize_color(robot.color_l.rgb()),
+            accurate_color(robot.color_l.rgb()),
+        )
+        robot.ev3_print(
+            robot.color_r.rgb(),
+            normalize_color(robot.color_r.rgb()),
+            accurate_color(robot.color_r.rgb()),
+        )
         wait(100)
 
 

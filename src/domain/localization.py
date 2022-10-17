@@ -45,12 +45,15 @@ def water_position_routine(robot: Robot):
     """Rotina de identificação de posição no mapa do robô da água."""
     while True:
         robot.forward_while_same_reflection(
-            60, 80, avoid_obstacles=True, reflection_diff=20
+            80, 100, avoid_obstacles=True, reflection_diff=20
         )
+        robot.pid_walk(2, -30)
+        robot.pid_align()
+        robot.pid_walk(1, 30)
 
         location = check_land_position_by_color(robot)
 
-        # wait_button_pressed(robot.brick)
+        robot.ev3_print(location)
 
         if location == "EDGE":
             robot.simple_walk(-10, 50)
