@@ -134,15 +134,26 @@ class Robot:
         speed_l=50,
         reflection_diff=10,
         avoid_obstacles=False,
+        pid: PIDValues = PIDValues(
+            kp=0.8,
+            ki=0.001,
+            kd=1,
+        ),
     ):
         """
         Move ambos os motores (de forma individual) até que a intensidade de reflexão
         mude o suficiente (`reflection_diff`)
         """
-        self.ev3_print(self.forward_while_same_reflection.__name__)
+        # self.ev3_print(self.forward_while_same_reflection.__name__)
 
         starting_ref_r = self.color_r.reflection()
         starting_ref_l = self.color_l.reflection()
+
+        self.motor_l.reset_angle(0)
+        self.motor_r.reset_angle(0)
+
+        motor_error_i = 0
+        prev_motor_error = 0
 
         stopped_l = False
         stopped_r = False
@@ -153,17 +164,35 @@ class Robot:
             diff_ref_r = self.color_r.reflection() - starting_ref_r
             diff_ref_l = self.color_l.reflection() - starting_ref_l
 
-            self.ev3_print(diff_ref_l, diff_ref_r)
+            # Controle PID entre os motores
+            if (not stopped_l and not stopped_r) and (speed_l == speed_r):
+                motor_diff = self.motor_r.angle() - self.motor_l.angle()
+                motor_error = motor_diff
+
+                motor_error_i += motor_error
+                motor_error_d = motor_error - prev_motor_error
+                prev_motor_error = motor_error
+
+                pid_speed = (
+                    pid.kp * motor_error
+                    + pid.ki * motor_error_i
+                    + pid.kd * motor_error_d
+                )
+            else:
+                pid_speed = 0
+            ###
+
+            # self.ev3_print(diff_ref_l, diff_ref_r)
 
             if abs(diff_ref_r) < reflection_diff:
-                self.motor_r.dc(speed_r)
+                self.motor_r.dc(speed_r - pid_speed)
             else:
                 if not stopped_l:
                     stopped_l = True
                 self.motor_r.hold()
 
             if abs(diff_ref_l) < reflection_diff:
-                self.motor_l.dc(speed_l)
+                self.motor_l.dc(speed_l + pid_speed)
             else:
                 if not stopped_r:
                     stopped_r = True

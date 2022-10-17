@@ -17,7 +17,7 @@ def check_land_position_by_color(robot: Robot) -> str:
     color_left = accurate_color(robot.color_l.rgb())
     color_right = accurate_color(robot.color_r.rgb())
 
-    robot.ev3_print(robot.color_l.rgb(), robot.color_r.rgb())
+    robot.ev3_print(color_left, color_right)
 
     if color_left == Color.GREEN:
         pos_left = "RAMP"
