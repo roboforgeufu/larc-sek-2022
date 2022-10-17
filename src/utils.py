@@ -99,11 +99,11 @@ def accurate_color(rgb_tuple):
     ):
         return Color.YELLOW
     elif (
-        between(red_normalized_value, 0.01, 0.2)
-        and between(green_normalized_value, 0.01, 0.2)
-        and between(blue_normalized_value, 0.01, 0.05)
+        red_normalized_value == 0
+        and green_normalized_value == 0
+        and blue_normalized_value == 0
     ):
-        return Color.BLACK
+        return "None"
     elif (
         between(red_normalized_value, 0.7, 1)
         and between(green_normalized_value, 0.7, 1)
@@ -117,7 +117,7 @@ def accurate_color(rgb_tuple):
     ):
         return Color.RED
     else:
-        return "None"
+        return Color.BLACK
 
 
 def wait_button_pressed(ev3: EV3Brick, button: Button = Button.CENTER):
