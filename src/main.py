@@ -287,5 +287,22 @@ def color_calibration():
         robot.brick.speaker.beep()
 
 
+def color_guessing():
+    # while a button is not pressed, read the color and print it on the screen
+    robot = Robot(
+        wheel_diameter=const.WHEEL_DIAMETER,
+        wheel_distance=const.WHEEL_DIST,
+        color_l=Port.S1,
+        color_r=Port.S2,
+        debug=True,
+    )
+
+    robot.brick.speaker.beep()
+    while not robot.brick.buttons.pressed():
+        robot.ev3_print(accurate_color(robot.color_l.rgb()))
+        robot.ev3_print(accurate_color(robot.color_r.rgb()))
+        wait(100)
+
+
 if __name__ == "__main__":
-    main()
+    color_guessing()
