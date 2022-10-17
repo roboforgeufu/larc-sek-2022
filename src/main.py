@@ -42,13 +42,15 @@ from domain.gas_duct import (
     check_hole,
     duct_deliver,
     duct_follower_turn_routine,
+    duct_get,
     duct_measure_hole,
     gas_duct_routine,
 )
 from domain.localization import (
+    back_from_water_routine,
+    back_to_water_routine,
     check_land_position_by_color,
     land_position_routine,
-    water_comeback_routine,
     water_position_routine,
 )
 from robot import Robot
@@ -224,7 +226,13 @@ def test_katara():
     gas_duct_routine(katara)
     wait_button_pressed(katara.brick)
 
-    water_comeback_routine(katara)
+    back_from_water_routine(katara)
+    wait_button_pressed(katara.brick)
+
+    duct_get(katara)
+
+    wait_button_pressed(katara.brick)
+    back_to_water_routine(katara)
 
 
 def white_calibration():
@@ -305,4 +313,4 @@ def color_guessing():
 
 
 if __name__ == "__main__":
-    color_guessing()
+    test_katara()
