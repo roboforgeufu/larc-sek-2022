@@ -56,6 +56,18 @@ def normalize_color(color_value, max_value=65):
         )
 
 
+def between(value, min_value, max_value):
+    """
+    Verifica se um valor está entre um intervalo.
+    """
+    error_margin = 0.33
+    return (
+        min_value - error_margin * min_value
+        <= value
+        <= max_value + error_margin * max_value
+    )
+
+
 def accurate_color(rgb_tuple):
     """
     Processamento de cor pra evitar os erros da leitura padrão.
@@ -69,40 +81,43 @@ def accurate_color(rgb_tuple):
     blue_normalized_value = normalize_color(blue_value)
 
     if (
-        red_value in range(0, 10)
-        and green_value in range(20, 30)
-        and blue_value in range(15, 65)
+        between(red_normalized_value, 0.11, 0.15)
+        and between(green_normalized_value, 0.36, 0.44)
+        and between(blue_normalized_value, 0.48, 0.72)
     ):
         return Color.BLUE
-    if (
-        red_value in range(0, 5)
-        and green_value in range(7, 30)
-        and blue_value in range(0, 5)
+    elif (
+        between(red_normalized_value, 0.03, 0.07)
+        and between(green_normalized_value, 0.32, 0.41)
+        and between(blue_normalized_value, 0.05, 0.14)
     ):
         return Color.GREEN
-    if (
-        red_value in range(10, 65)
-        and green_value in range(5, 15)
-        and blue_value in range(0, 10)
-    ):
-        return Color.RED
-    if (
-        red_value in range(60, 75)
-        and green_value in range(30, 65)
-        and blue_value in range(5, 20)
+    elif (
+        between(red_normalized_value, 0.71, 0.8)
+        and between(green_normalized_value, 0.46, 0.5)
+        and between(blue_normalized_value, 0.07, 0.14)
     ):
         return Color.YELLOW
-    if red_value > 65 and green_value > 65 and blue_value > 65:
-        return Color.WHITE
-    if (
-        red_value in range(1, 15)
-        and green_value in range(1, 15)
-        and blue_value in range(1, 15)
-    ):  # linha
+    elif (
+        between(red_normalized_value, 0.01, 0.2)
+        and between(green_normalized_value, 0.01, 0.2)
+        and between(blue_normalized_value, 0.01, 0.05)
+    ):
         return Color.BLACK
-    if sum(rgb_tuple) <= 3:
+    elif (
+        between(red_normalized_value, 0.7, 1)
+        and between(green_normalized_value, 0.7, 1)
+        and between(blue_normalized_value, 0.7, 1)
+    ):
+        return Color.WHITE
+    elif (
+        between(red_normalized_value, 0.57, 0.73)
+        and between(green_normalized_value, 0.05, 0.07)
+        and between(blue_normalized_value, 0, 0.05)
+    ):
+        return Color.RED
+    else:
         return "None"
-    return Color.BLACK
 
 
 def wait_button_pressed(ev3: EV3Brick, button: Button = Button.CENTER):

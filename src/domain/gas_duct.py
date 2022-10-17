@@ -78,7 +78,7 @@ def check_hole(robot: Robot):
     True caso seja um pedaço faltante do gasoduto,
     False caso seja um "final" de gasoduto (curva).
     """
-    robot.motor_sensor.run_target(300, 600)
+    robot.motor_sensor.run_target(300, 550)
     hole_seen = robot.infra_side.distance() <= const.WALL_SEEN_DIST
     if hole_seen:
         robot.min_aligner(robot.infra_side.distance)
@@ -147,3 +147,19 @@ def duct_deliver(robot: Robot, measured_value: int):
     robot.motor_claw.run_target(300, 300, wait=True)
 
     robot.simple_walk(((measured_value + 2) / 2) + 4, speed=30)
+
+
+def duct_get(robot: Robot):
+    """Recolhe o duto na terra"""
+    # recolhe o duto
+    robot.min_aligner(robot.ultra_front.distance)
+    robot.move_to_distance(80, robot.ultra_front)
+    robot.min_aligner(robot.ultra_front.distance)
+
+    robot.motor_claw.run_target(300, 0)
+
+    robot.pid_walk(cm=10, vel=30)
+    robot.off_motors()
+    robot.motor_claw.run_target(300, 300)
+    robot.pid_turn(180)
+    robot.forward_while_same_reflection()
