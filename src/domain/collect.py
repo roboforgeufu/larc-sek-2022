@@ -44,6 +44,7 @@ from utils import accurate_color, ev3_print
 
 #     return (abs(robot.motor_l.angle()) + abs(robot.motor_l.angle()))/4
 
+
 def duct_ends(
     robot: Robot,
     speed: int = 25,
@@ -80,27 +81,27 @@ def duct_ends(
     while sensor.distance() < const.DUCT_ENDS_US_DIFF:
         robot.motor_l.dc(speed)
         robot.motor_r.dc(-speed)
-        lowest_ultra_value_r = min(lowest_ultra_value_r,sensor.distance())
+        lowest_ultra_value_r = min(lowest_ultra_value_r, sensor.distance())
 
     while sensor.distance() > const.DUCT_ENDS_US_DIFF:
         robot.motor_l.dc(-speed)
         robot.motor_r.dc(speed)
-    
+
     robot.motor_l.reset_angle(0)
     robot.motor_r.reset_angle(0)
     while sensor.distance() < const.DUCT_ENDS_US_DIFF:
         robot.motor_l.dc(-speed)
         robot.motor_r.dc(speed)
-        lowest_ultra_value_l = min(lowest_ultra_value_l,sensor.distance())
+        lowest_ultra_value_l = min(lowest_ultra_value_l, sensor.distance())
 
     robot.off_motors()
-    ultra_mean = (lowest_ultra_value_l+lowest_ultra_value_r)/2
-    motor_mean = (abs(robot.motor_l.angle()) + abs(robot.motor_l.angle()))/2
-    robot.pid_turn(motor_mean/2,mode=2)
+    ultra_mean = (lowest_ultra_value_l + lowest_ultra_value_r) / 2
+    motor_mean = (abs(robot.motor_l.angle()) + abs(robot.motor_l.angle())) / 2
+    robot.pid_turn(motor_mean / 2, mode=2)
 
-    theta = (const.WHEEL_DIAMETER*motor_mean)/(const.WHEEL_DIST)
-    theta_rad = (theta * math.pi)/180
-    arc_length = theta_rad * ((ultra_mean/10)+8)
+    theta = (const.WHEEL_DIAMETER * motor_mean) / (const.WHEEL_DIST)
+    theta_rad = (theta * math.pi) / 180
+    arc_length = theta_rad * ((ultra_mean / 10) + 8)
     return arc_length
 
 
@@ -126,6 +127,7 @@ def align_duct_center(robot: Robot):
     avg = (first_dist + second_dist) / 2
     robot.move_to_distance(distance=avg)
 
+
 def find_duct(robot: Robot):
     """encontra a menor distância num arco de 90º na frente do robô"""
     lowest_ultra_value = 2550
@@ -137,21 +139,25 @@ def find_duct(robot: Robot):
         distance = robot.ultra_front_r.distance()
         ultra_reads.append(distance)
         lowest_ultra_value = min(ultra_reads)
-        m_mean = (abs(robot.motor_l.angle())+abs(robot.motor_r.angle()))/2
+        m_mean = (abs(robot.motor_l.angle()) + abs(robot.motor_r.angle())) / 2
         robot.motor_l.dc(30)
         robot.motor_r.dc(-30)
-        if(len(ultra_reads)>=10):
-            if(ultra_reads[-1]-ultra_reads[-2]<0 and sum(ultra_reads[-10:])/10 < const.DIST_LINE_TO_END):
+        if len(ultra_reads) >= 10:
+            if (
+                ultra_reads[-1] - ultra_reads[-2] < 0
+                and sum(ultra_reads[-10:]) / 10 < const.DIST_LINE_TO_END
+            ):
                 arc_length = duct_ends(robot)
                 robot.off_motors()
                 return lowest_ultra_value, arc_length
 
-        if(m_mean>robot.robot_axis_to_motor_degrees(90)):
+        if m_mean > robot.robot_axis_to_motor_degrees(90):
             robot.pid_turn(-45)
             robot.off_motors()
             return False, 0
-        
-def duct_seek_routine(robot:Robot):
+
+
+def duct_seek_routine(robot: Robot):
     for _ in range(3):
 
         # alinha com a linha preta e vai um pouco pra frente para estar em cima da cor
@@ -177,9 +183,7 @@ def duct_seek_routine(robot:Robot):
         if (
             (accurate_color(robot.color_l.rgb()) == Color.YELLOW and arc_length > 5)
             or (accurate_color(robot.color_l.rgb()) == Color.RED and arc_length > 10)
-            or (
-                accurate_color(robot.color_l.rgb()) == Color.BLUE and arc_length > 15
-            )
+            or (accurate_color(robot.color_l.rgb()) == Color.BLUE and arc_length > 15)
         ):
 
             # recolhe o duto

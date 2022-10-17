@@ -42,40 +42,52 @@ def get_hostname() -> str:
     return stream.read().split()[0]
 
 
+def normalize_color(color_value):
+    return color_value/255
+
 def accurate_color(rgb_tuple):
     """
     Processamento de cor pra evitar os erros da leitura padrão.
     """
+    red_value = rgb_tuple[0]
+    green_value = rgb_tuple[1]
+    blue_value = rgb_tuple[2]
+
+    red_normalized_value = normalize_color(red_value)
+    green_normalized_value = normalize_color(green_value)
+    blue_normalized_value = normalize_color(blue_value)
+
+
     if (
-        rgb_tuple[0] in range(0, 10)
-        and rgb_tuple[1] in range(20, 30)
-        and rgb_tuple[2] in range(15, 65)
+        red_value in range(0, 10)
+        and green_value in range(20, 30)
+        and blue_value in range(15, 65)
     ):
         return Color.BLUE
     if (
-        rgb_tuple[0] in range(0, 5)
-        and rgb_tuple[1] in range(7, 30)
-        and rgb_tuple[2] in range(0, 5)
+        red_value in range(0, 5)
+        and green_value in range(7, 30)
+        and blue_value in range(0, 5)
     ):
         return Color.GREEN
     if (
-        rgb_tuple[0] in range(10, 65)
-        and rgb_tuple[1] in range(5, 15)
-        and rgb_tuple[2] in range(0, 10)
+        red_value in range(10, 65)
+        and green_value in range(5, 15)
+        and blue_value in range(0, 10)
     ):
         return Color.RED
     if (
-        rgb_tuple[0] in range(60, 75)
-        and rgb_tuple[1] in range(30, 65)
-        and rgb_tuple[2] in range(5, 20)
+        red_value in range(60, 75)
+        and green_value in range(30, 65)
+        and blue_value in range(5, 20)
     ):
         return Color.YELLOW
-    if rgb_tuple[0] > 65 and rgb_tuple[1] > 65 and rgb_tuple[2] > 65:
+    if red_value > 65 and green_value > 65 and blue_value > 65:
         return Color.WHITE
     if (
-        rgb_tuple[0] in range(1, 15)
-        and rgb_tuple[1] in range(1, 15)
-        and rgb_tuple[2] in range(1, 15)
+        red_value in range(1, 15)
+        and green_value in range(1, 15)
+        and blue_value in range(1, 15)
     ):  # linha
         return Color.BLACK
     if sum(rgb_tuple) <= 3:
