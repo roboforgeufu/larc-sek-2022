@@ -30,7 +30,7 @@ from pybricks.parameters import Color, Port
 from pybricks.tools import DataLog, wait
 
 import constants as const
-from domain.collect import align_duct_center, duct_ends, find_duct, duct_seek_routine
+from domain.collect import align_duct_center, duct_ends, duct_seek_routine, find_duct
 from domain.gas_duct import (
     armagedon_the_end_of_times,
     check_hole,
@@ -93,8 +93,14 @@ def main():
 
 def land_main(toph: Robot):
 
+    toph.pid_turn(45)
+    wait_button_pressed(toph.brick)
+    toph.pid_turn(90)
+    wait_button_pressed(toph.brick)
+    toph.pid_turn(-180)
+    wait_button_pressed(toph.brick)
     """Main da Toph"""
-    
+
     # # conexao entre os bricks por bluetooth
     # toph.ev3_print(get_hostname())
     # server = BluetoothMailboxServer()
@@ -115,19 +121,20 @@ def land_main(toph: Robot):
 
     # algoritmo de localizacao terrestre
     color_order = land_position_routine(toph)
-    valid_colors = [Color.YELLOW,Color.RED,Color.BLUE]
+    valid_colors = [Color.YELLOW, Color.RED, Color.BLUE]
     for color in valid_colors:
-        if(color not in color_order):
+        if color not in color_order:
             color_order.append(color)
     ev3_print(color_order)
+    wait_button_pressed(toph.brick)
 
     # vai ao primeiro terço da primeira cor
     toph.pid_walk(cm=13, vel=-60)
     toph.pid_turn(90)
     toph.pid_walk(cm=10, vel=-60)
     toph.forward_while_same_reflection()
-    toph.pid_walk(cm=8, vel=-60)
-    toph.one_wheel_turn(800, toph.motor_l)
+    toph.pid_walk(cm=7, vel=-60)
+    toph.one_wheel_turn(700, toph.motor_l)
 
     # dutos subsequentes (comunicação bluetooth)
 
@@ -136,17 +143,21 @@ def land_main(toph: Robot):
 
         # num_mbox.wait()
         # num = num_mbox.read()
-        num = 20
+        num = 10
 
-        if(num==10):
-            toph.pid_line_follower_color_id(80,toph.color_l,break_color=Color.YELLOW)
+        if num == 10:
+            toph.pid_line_grabber(100, 2000, toph.color_l)
+            toph.pid_line_follower_color_id(80, toph.color_l, break_color=Color.YELLOW)
             duct_seek_routine(toph)
-        if(num==15):
-            toph.pid_line_follower_color_id(80,toph.color_l,break_color=Color.RED)
+        if num == 15:
+            toph.pid_line_grabber(100, 2000, toph.color_l)
+            toph.pid_line_follower_color_id(80, toph.color_l, break_color=Color.RED)
             duct_seek_routine(toph)
-        if(num==20):
-            toph.pid_line_follower_color_id(80,toph.color_l,break_color=Color.BLUE)
+        if num == 20:
+            toph.pid_line_grabber(100, 2000, toph.color_l)
+            toph.pid_line_follower_color_id(80, toph.color_l, break_color=Color.BLUE)
             duct_seek_routine(toph)
+
 
 def water_main(katara: Robot):
     """Main da Katara"""
@@ -195,4 +206,4 @@ def test_katara():
 
 
 if __name__ == "__main__":
-    test_katara()
+    main()
