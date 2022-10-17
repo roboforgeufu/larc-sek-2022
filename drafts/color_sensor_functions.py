@@ -3,6 +3,7 @@ from pybricks.hubs import EV3Brick
 from pybricks.ev3devices import Motor, ColorSensor
 from pybricks.parameters import Port, Color, Stop
 from pybricks.tools import StopWatch, wait
+
 # Initialize the EV3 brick.
 ev3 = EV3Brick()
 # Initialize.
@@ -17,15 +18,19 @@ sensorc2 = ColorSensor(Port.S2)
 color_l = sensorc1
 color_r = sensorc2
 
+
 def ev3_print(*args, **kwargs):
     ev3.screen.print(*args, **kwargs)
     print(*args, **kwargs)
+
 
 def off_motors():
     motor_l.dc(0)
     motor_r.dc(0)
 
+
 #######################
+
 
 def forward_while_same_reflection(speed_r=50, speed_l=50, reflection_diff=10):
     starting_ref_r = sensorc2.reflection()
@@ -51,6 +56,7 @@ def forward_while_same_reflection(speed_r=50, speed_l=50, reflection_diff=10):
             motorB.hold()
     motorB.dc(0)
     motorC.dc(0)
+
 
 def accurate_color(rgb_tuple):
     if sum(rgb_tuple) == 0:
@@ -90,6 +96,7 @@ def check_land_position_by_color(sensorc1: ColorSensor, sensorc2: ColorSensor) -
 
     return str(pos_left + ":" + pos_right)
 
+
 def align_pid(target=30, kp=0.7, ki=0, kd=0):
     left_error_i = 0
     right_error_i = 0
@@ -125,12 +132,14 @@ def align_pid(target=30, kp=0.7, ki=0, kd=0):
         motor_l.dc(left_pid_speed)
         motor_r.dc(right_pid_speed)
 
+
 ########################
 
-def segue_linha_c1(vel,tempo):
-    valorLum = 35 #medir na linha toda vez
+
+def segue_linha_c1(vel, tempo):
+    valorLum = 35  # medir na linha toda vez
     Kp = 3.5
-    Ki = 0.05 
+    Ki = 0.05
     Kd = 10
 
     erro = 0
@@ -138,29 +147,33 @@ def segue_linha_c1(vel,tempo):
     t = 0
     cronometro.reset()
     while True:
-        erro0 = erro  
-        erro = valorLum - sensorc1.reflection()  
-        valorP = erro*Kp
-        if(-3<erro<3): valorI = (valorI+erro)*Ki
+        erro0 = erro
+        erro = valorLum - sensorc1.reflection()
+        valorP = erro * Kp
+        if -3 < erro < 3:
+            valorI = (valorI + erro) * Ki
         t0 = t
         t = cronometro.time()
         tempoDecor = t - t0
-        if(tempoDecor<1): tempoDecor = 1
-        valorD = ((erro - erro0)*Kd)/tempoDecor
+        if tempoDecor < 1:
+            tempoDecor = 1
+        valorD = ((erro - erro0) * Kd) / tempoDecor
 
         valorPID = valorP + valorI + valorD
 
-        motorC.run(vel+valorPID)
-        motorB.run(vel-valorPID)
+        motorC.run(vel + valorPID)
+        motorB.run(vel - valorPID)
 
-        if(cronometro.time()>tempo): break
+        if cronometro.time() > tempo:
+            break
     motorC.hold()
     motorB.hold()
 
+
 def segue_linha_c1_buraco(vel):
-    valorLum = 35 #medir na linha toda vez
+    valorLum = 35  # medir na linha toda vez
     Kp = 3.5
-    Ki = 0.05 
+    Ki = 0.05
     Kd = 10
 
     erro = 0
@@ -168,65 +181,71 @@ def segue_linha_c1_buraco(vel):
     t = 0
 
     cores = []
-    cores_validas = [Color.YELLOW,Color.BLUE,Color.RED]
+    cores_validas = [Color.YELLOW, Color.BLUE, Color.RED]
 
     cronometro.reset()
     while True:
-        erro0 = erro  
-        erro = valorLum - sensorc1.reflection()  
-        valorP = erro*Kp
-        if(-3<erro<3): valorI = (valorI+erro)*Ki
+        erro0 = erro
+        erro = valorLum - sensorc1.reflection()
+        valorP = erro * Kp
+        if -3 < erro < 3:
+            valorI = (valorI + erro) * Ki
         t0 = t
         t = cronometro.time()
         tempoDecor = t - t0
-        if(tempoDecor<1): tempoDecor = 1
-        valorD = ((erro - erro0)*Kd)/tempoDecor
+        if tempoDecor < 1:
+            tempoDecor = 1
+        valorD = ((erro - erro0) * Kd) / tempoDecor
 
         valorPID = valorP + valorI + valorD
 
-        motorC.run(vel+valorPID)
-        motorB.run(vel-valorPID)
+        motorC.run(vel + valorPID)
+        motorB.run(vel - valorPID)
 
-        if(sensorc2.color() not in cores and sensorc2.color() in cores_validas):
+        if sensorc2.color() not in cores and sensorc2.color() in cores_validas:
             cores.append(sensorc2.color())
             cores_validas.remove(sensorc2.color())
 
-        if(sensorc2.color()==None): break
+        if sensorc2.color() == None:
+            break
     motorC.hold()
     motorB.hold()
 
     return cores
 
-def segue_linha_c2_buraco(vel,array):
-    valorLum = 35 #medir na linha toda vez
+
+def segue_linha_c2_buraco(vel, array):
+    valorLum = 35  # medir na linha toda vez
     Kp = 3.5
-    Ki = 0.05 
+    Ki = 0.05
     Kd = 10
 
     erro = 0
     valorI = 0
     t = 0
 
-    cores_validas = [Color.YELLOW,Color.BLUE,Color.RED]
+    cores_validas = [Color.YELLOW, Color.BLUE, Color.RED]
     print(array)
     cronometro.reset()
     while True:
-        erro0 = erro  
-        erro = valorLum - sensorc2.reflection()  
-        valorP = erro*Kp
-        if(-3<erro<3): valorI = (valorI+erro)*Ki
+        erro0 = erro
+        erro = valorLum - sensorc2.reflection()
+        valorP = erro * Kp
+        if -3 < erro < 3:
+            valorI = (valorI + erro) * Ki
         t0 = t
         t = cronometro.time()
         tempoDecor = t - t0
-        if(tempoDecor<1): tempoDecor = 1
-        valorD = ((erro - erro0)*Kd)/tempoDecor
+        if tempoDecor < 1:
+            tempoDecor = 1
+        valorD = ((erro - erro0) * Kd) / tempoDecor
 
         valorPID = valorP + valorI + valorD
 
-        motorC.run(vel-valorPID)
-        motorB.run(vel+valorPID)
+        motorC.run(vel - valorPID)
+        motorB.run(vel + valorPID)
 
-        if(sensorc1.color() not in array and sensorc1.color() in cores_validas):
+        if sensorc1.color() not in array and sensorc1.color() in cores_validas:
             array.append(sensorc1.color())
             break
 
@@ -234,6 +253,7 @@ def segue_linha_c2_buraco(vel,array):
     motorB.hold()
 
     return array
+
 
 ####################
 

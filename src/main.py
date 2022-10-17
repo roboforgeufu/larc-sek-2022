@@ -94,7 +94,7 @@ def main():
 def land_main(toph: Robot):
 
     """Main da Toph"""
-    
+
     # # conexao entre os bricks por bluetooth
     # toph.ev3_print(get_hostname())
     # server = BluetoothMailboxServer()
@@ -115,9 +115,9 @@ def land_main(toph: Robot):
 
     # algoritmo de localizacao terrestre
     color_order = land_position_routine(toph)
-    valid_colors = [Color.YELLOW,Color.RED,Color.BLUE]
+    valid_colors = [Color.YELLOW, Color.RED, Color.BLUE]
     for color in valid_colors:
-        if(color not in color_order):
+        if color not in color_order:
             color_order.append(color)
     ev3_print(color_order)
 
@@ -138,15 +138,16 @@ def land_main(toph: Robot):
         # num = num_mbox.read()
         num = 20
 
-        if(num==10):
-            toph.pid_line_follower_color_id(80,toph.color_l,break_color=Color.YELLOW)
+        if num == 10:
+            toph.pid_line_follower_color_id(80, toph.color_l, break_color=Color.YELLOW)
             duct_seek_routine(toph)
-        if(num==15):
-            toph.pid_line_follower_color_id(80,toph.color_l,break_color=Color.RED)
+        if num == 15:
+            toph.pid_line_follower_color_id(80, toph.color_l, break_color=Color.RED)
             duct_seek_routine(toph)
-        if(num==20):
-            toph.pid_line_follower_color_id(80,toph.color_l,break_color=Color.BLUE)
+        if num == 20:
+            toph.pid_line_follower_color_id(80, toph.color_l, break_color=Color.BLUE)
             duct_seek_routine(toph)
+
 
 def water_main(katara: Robot):
     """Main da Katara"""
@@ -195,4 +196,4 @@ def test_katara():
 
 
 if __name__ == "__main__":
-    test_katara()
+    main()

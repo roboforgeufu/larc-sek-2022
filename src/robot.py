@@ -612,8 +612,8 @@ class Robot:
         self,
         vel,
         sensor,
-        array = None,
-        break_color = None,
+        array=None,
+        break_color=None,
         pid: PIDValues = PIDValues(
             target=40,  # medir na linha toda vez
             kp=0.35,
@@ -673,7 +673,7 @@ class Robot:
                 break_array.clear()
             if break_array.count("None") == 3:
                 break
-            
+
             if break_color == None:
                 if len(array) >= 2:
                     break
