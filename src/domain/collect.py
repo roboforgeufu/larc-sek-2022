@@ -59,7 +59,7 @@ def duct_ends(
     lowest_ultra_value_r = 2550
     robot.motor_l.reset_angle(0)
     robot.motor_r.reset_angle(0)
-    sensor = robot.ultra_front_r
+    sensor = robot.ultra_front
 
     # robot.stopwatch.reset()
     # if(sensor.distance() > const.DIST_LINE_TO_END):
@@ -222,9 +222,77 @@ def duct_seek_routine(robot: Robot):
             break
 
 
-def duct_seek_routine_new(robot: Robot):
+def duct_seek_routine_new(robot: Robot,color):
 
-    robot.walk_to_hole(mode=3)
-    wait(50)
-    print(robot.hole_measurement())
+    measurements = []
+    travelled_distance = 0
+
+    while(accurate_color(robot.color_l.rgb())!=color):
+        robot.motor_l.reset_angle(0)
+        robot.motor_r.reset_angle(0)
+        
+        robot.walk_to_hole(mode=3)
+        motor_mean = (robot.motor_l.angle()+robot.motor_r.angle())/2
+        degrees = motor_mean
+        travelled_distance = travelled_distance + degrees
+        print("1",travelled_distance)
+        duct_length = robot.duct_measurement()
+
+        if duct_length > 5:
+            duct_middle_cm = ((travelled_distance / 360) * const.WHEEL_LENGTH) + (duct_length / 2)
+            measurements.append((duct_length,duct_middle_cm))
+
+        travelled_distance = travelled_distance + ((duct_length * 360) / const.WHEEL_LENGTH)
+        print("2",travelled_distance)
+        robot.off_motors()
+        wait(50)
+
     robot.off_motors()
+    travelled_distance_cm = (travelled_distance / 360) * const.WHEEL_LENGTH
+    print(measurements,travelled_distance_cm)
+    
+    max_duct_length = max(i for i, _ in measurements)
+    optimal_motor_choice = 0
+    for duct_length, motor_cm in measurements:
+        if max_duct_length == duct_length:
+            optimal_motor_choice = motor_cm
+    
+
+    robot.pid_walk(cm=(travelled_distance_cm-optimal_motor_choice),vel=-60)
+    robot.pid_turn(-90)
+
+    ###REFATORAR, DAR UMA OLHADA
+
+    # recolhe o duto
+    dist = robot.ultra_front.distance()/10
+    robot.pid_walk(cm=max(1, (dist-3)), vel=50)
+    robot.pid_walk(cm=8, vel=20)
+    robot.off_motors()
+    robot.motor_claw.reset_angle(0)
+    robot.motor_claw.run_target(300, 300)
+
+    # alinha com a linha preta e o buraco para deixar o duto numa posição padrão
+    robot.forward_while_same_reflection(speed_r=-60, speed_l=-60)
+    robot.pid_walk(cm=13, vel=-60)
+    robot.pid_turn(-90)
+    robot.forward_while_same_reflection()
+    robot.pid_align()
+
+    # deixa o duto a 40cm do buraco
+    robot.pid_walk(cm=40, vel=-60)
+    robot.pid_turn(-90)
+    robot.motor_claw.run_target(300, -10)
+
+    # alinha com o buraco restaurando a posicao inicial
+    robot.pid_walk(cm=5, vel=-60)
+    robot.pid_turn(180)
+    robot.forward_while_same_reflection()
+    robot.pid_walk(cm=5, vel=-60)
+    robot.pid_turn(-90)
+    robot.forward_while_same_reflection()
+    robot.pid_walk(cm=5, vel=-60)
+    robot.pid_turn(90)
+    robot.forward_while_same_reflection()
+    robot.pid_walk(cm=10, vel=-60)
+    robot.one_wheel_turn(800, robot.motor_l)
+    robot.pid_line_grabber(100, 2000, robot.color_l)
