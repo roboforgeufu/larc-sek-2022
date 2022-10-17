@@ -42,8 +42,19 @@ def get_hostname() -> str:
     return stream.read().split()[0]
 
 
-def normalize_color(color_value):
-    return color_value/255
+def normalize_color(color_value, max_value=65):
+    """
+    Normalização dos valores de cor lidos.
+    """
+    if isinstance(color_value, int):
+        return color_value / max_value
+    else:
+        return (
+            color_value[0] / max_value,
+            color_value[1] / max_value,
+            color_value[2] / max_value,
+        )
+
 
 def accurate_color(rgb_tuple):
     """
@@ -56,7 +67,6 @@ def accurate_color(rgb_tuple):
     red_normalized_value = normalize_color(red_value)
     green_normalized_value = normalize_color(green_value)
     blue_normalized_value = normalize_color(blue_value)
-
 
     if (
         red_value in range(0, 10)
