@@ -50,7 +50,7 @@ def water_position_routine(robot: Robot):
 
         location = check_land_position_by_color(robot)
 
-        wait_button_pressed(robot.brick)
+        # wait_button_pressed(robot.brick)
 
         if location == "EDGE":
             robot.simple_walk(-10, 50)
@@ -82,8 +82,7 @@ def water_position_routine(robot: Robot):
     robot.off_motors()
     # ROBO NA RAMPA
 
-    robot.simple_walk(70, speed_l=50, speed_r=55)
-    robot.simple_turn(90, speed=-50)
+    back_to_water_routine(robot)
 
 
 def land_position_routine(robot: Robot):
@@ -138,20 +137,32 @@ def land_position_routine(robot: Robot):
     return color_order
 
 
-def water_comeback_routine(robot: Robot):
+def back_from_water_routine(robot: Robot):
     robot.pid_turn(-90)
     robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
     robot.pid_walk(10, -80)
     robot.pid_turn(-90)
     robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
 
-    robot.pid_walk(40, -80)
+    robot.pid_walk(10, -80)
+    robot.pid_turn(90)
+    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
+    robot.pid_walk(10, -80)
+    robot.pid_turn(-90)
+    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
+
+    robot.simple_walk(-40, speed=30)
     robot.pid_turn(90)
     robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
 
-    robot.motor_claw.run_target(300, 0, wait=False)
-    robot.pid_walk(30)
-    robot.motor_claw.run_target(300, 0)
-
-    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
+    robot.pid_walk(30, vel=80)
+    robot.forward_while_same_reflection(
+        speed_r=80, speed_l=80, reflection_diff=const.COL_REFLECTION_HOLE_DIFF
+    )
     robot.pid_walk(20)
+
+
+def back_to_water_routine(robot: Robot):
+    """O robô está na rampa, desce para a água e vira para a direita."""
+    robot.simple_walk(70, speed_l=50, speed_r=55)
+    robot.simple_turn(90, speed=-50)
