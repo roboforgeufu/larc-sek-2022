@@ -127,9 +127,9 @@ def land_main(toph: Robot):
 
     while True:
 
-       color_left = normalize_color(toph.color_l.rgb())
-       color_right = normalize_color(toph.color_r.rgb())
-       toph.ev3_print(color_left, color_right, clear=True)
+        color_left = normalize_color(toph.color_l.rgb())
+        color_right = normalize_color(toph.color_r.rgb())
+        toph.ev3_print(color_left, color_right, clear=True)
 
     # algoritmo de localizacao terrestre
     # color_order = land_position_routine(toph)
@@ -156,7 +156,7 @@ def land_main(toph: Robot):
 
         # num_mbox.wait()
         # num = num_mbox.read()
-        color_order = [Color.BLUE,Color.RED,Color.YELLOW]
+        color_order = [Color.BLUE, Color.RED, Color.YELLOW]
         num = 10
 
         if num == 10:
@@ -225,18 +225,22 @@ def test_katara():
     wait_button_pressed(katara.brick)
 
     water_position_routine(katara)
-    wait_button_pressed(katara.brick)
+    katara.brick.speaker.beep()
+    delivery = None
 
-    gas_duct_routine(katara)
-    wait_button_pressed(katara.brick)
+    while True:
+        gas_duct_routine(katara, delivery=delivery)
+        katara.brick.speaker.beep()
 
-    back_from_water_routine(katara)
-    wait_button_pressed(katara.brick)
+        back_from_water_routine(katara)
+        katara.brick.speaker.beep()
 
-    duct_get(katara)
+        duct_get(katara)
+        katara.brick.speaker.beep()
 
-    wait_button_pressed(katara.brick)
-    back_to_water_routine(katara)
+        back_to_water_routine(katara)
+        katara.brick.speaker.beep()
+        delivery = 10
 
 
 def white_calibration():
@@ -336,4 +340,4 @@ def color_guessing():
 
 
 if __name__ == "__main__":
-    color_calibration()
+    test_katara()
