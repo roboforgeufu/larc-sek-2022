@@ -96,7 +96,7 @@ def main():
                 color_l=Port.S1,
                 color_r=Port.S2,
                 turn_correction=0.9,
-                color_max_value=100,
+                color_max_value=110,
                 debug=True,
             )
         )
@@ -122,7 +122,6 @@ def land_main(toph: Robot):
 
     # # katara desceu a rampa
     # logic_mbox.wait()
-
 
     # algoritmo de localizacao terrestre
     color_order = land_position_routine(toph)
