@@ -100,23 +100,23 @@ def main():
 def land_main(toph: Robot):
     """Main da Toph"""
 
-    # # conexao entre os bricks por bluetooth
-    # toph.ev3_print(get_hostname())
-    # server = BluetoothMailboxServer()
-    # toph.ev3_print("SERVER: waiting for connection...")
-    # server.wait_for_connection()
-    # toph.ev3_print("SERVER: connected!")
+    # conexao entre os bricks por bluetooth
+    toph.ev3_print(get_hostname())
+    server = BluetoothMailboxServer()
+    toph.ev3_print("SERVER: waiting for connection...")
+    server.wait_for_connection()
+    toph.ev3_print("SERVER: connected!")
 
-    # # # espera a katara sair da meeting area
-    # # # antes de comecar a rotina de localizacao
-    # logic_mbox = LogicMailbox("start", server)
+    # # espera a katara sair da meeting area
+    # # antes de comecar a rotina de localizacao
+    logic_mbox = LogicMailbox("start", server)
 
-    # # # espera a katara falar q conectou
-    # logic_mbox.wait()
-    # logic_mbox.send(True)
+    # # espera a katara falar q conectou
+    logic_mbox.wait()
+    logic_mbox.send(True)
 
-    # # # katara desceu a rampa
-    # logic_mbox.wait()
+    # # katara desceu a rampa
+    logic_mbox.wait()
 
     # # algoritmo de localizacao terrestre
     color_order = land_position_routine(toph)
@@ -139,12 +139,11 @@ def land_main(toph: Robot):
     # termina com o sensor esquerdo sobre a linha preta da primeira cor
 
     # dutos subsequentes (comunicação bluetooth)
-    # numeric_mbox = NumericMailbox("measures", server)
+    numeric_mbox = NumericMailbox("measures", server)
     while True:
 
-        # numeric_mbox.wait()
-        # num = numeric_mbox.read()
-        num = 10
+        numeric_mbox.wait()
+        num = numeric_mbox.read()
 
         if num == 10:
             toph.line_follower_color_id(toph.color_l, break_color=Color.YELLOW)
@@ -158,7 +157,7 @@ def land_main(toph: Robot):
 
         color_order.append(None)
         duct_seek_routine_new(toph, color_order[index + 1])
-        # numeric_mbox.send(0)
+        numeric_mbox.send(0)
 
 
 def water_main(katara: Robot):
