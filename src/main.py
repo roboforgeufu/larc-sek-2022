@@ -55,7 +55,6 @@ from domain.localization import (
 from robot import Robot
 from utils import (
     PIDValues,
-    accurate_color,
     ev3_print,
     get_hostname,
     normalize_color,
@@ -325,12 +324,12 @@ def color_guessing():
         robot.ev3_print(
             robot.color_l.rgb(),
             normalize_color(robot.color_l.rgb()),
-            accurate_color(robot.color_l.rgb()),
+            robot.accurate_color(robot.color_l.rgb()),
         )
         robot.ev3_print(
             robot.color_r.rgb(),
             normalize_color(robot.color_r.rgb()),
-            accurate_color(robot.color_r.rgb()),
+            robot.accurate_color(robot.color_r.rgb()),
         )
         wait(100)
 

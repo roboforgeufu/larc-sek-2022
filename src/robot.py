@@ -17,7 +17,7 @@ from pybricks.parameters import Color, Port
 from pybricks.tools import StopWatch, wait
 
 import constants as const
-from utils import PIDValues, accurate_color, wait_button_pressed
+from utils import PIDValues, wait_button_pressed, between, normalize_color
 
 
 class Robot:
@@ -45,6 +45,7 @@ class Robot:
         color_l: Port = None,
         debug: bool = False,
         turn_correction: float = 1,
+        color_max_value: float = 100,
     ) -> None:
         # Brick EV3
         self.brick = EV3Brick()
@@ -53,6 +54,7 @@ class Robot:
         self.wheel_diameter = wheel_diameter
         self.wheel_distance = wheel_distance
         self.turn_correction = turn_correction
+        self.color_max_value = color_max_value
 
         # Cronometro
         self.stopwatch = StopWatch()
@@ -692,21 +694,21 @@ class Robot:
 
             pid_sign = 1 if sensor == self.color_l else -1
             if (
-                (accurate_color(sensor.rgb()) != Color.WHITE)
-                or (accurate_color(sensor.rgb()) != Color.BLACK)
-                or (accurate_color(sensor.rgb()) != None)
+                (self.accurate_color(sensor.rgb()) != Color.WHITE)
+                or (self.accurate_color(sensor.rgb()) != Color.BLACK)
+                or (self.accurate_color(sensor.rgb()) != None)
             ):
                 pid_sign = pid_sign * (-1)
 
             self.motor_r.dc(vel + pid_correction * pid_sign)
             self.motor_l.dc(vel - pid_correction * pid_sign)
 
-            color_read = accurate_color(sensor.rgb())
+            color_read = self.accurate_color(sensor.rgb())
             if color_read not in array and color_read in valid_colors:
                 array.append(accurate_color(sensor.rgb()))
 
-            if accurate_color(sensor.rgb()) != None:
-                break_array.append(accurate_color(sensor.rgb()))
+            if self.accurate_color(sensor.rgb()) != None:
+                break_array.append(self.accurate_color(sensor.rgb()))
             if len(break_array) > 2:
                 break_array.clear()
             if break_array.count("None") == 2:
@@ -1105,3 +1107,56 @@ class Robot:
                 self.motor_l.dc(-(vel - pid_correction))
 
         self.off_motors()
+
+
+    def accurate_color(self, rgb_tuple):
+        """ 
+        Processamento de cor pra evitar os erros da leitura padrão.
+        """
+        red_value = rgb_tuple[0]
+        green_value = rgb_tuple[1]
+        blue_value = rgb_tuple[2]
+        
+
+        red_normalized_value = normalize_color(red_value, self.color_max_value)
+        green_normalized_value = normalize_color(green_value, self.color_max_value)
+        blue_normalized_value = normalize_color(blue_value, self.color_max_value)
+
+        if (
+            between(red_normalized_value, 0.11, 0.15)
+            and between(green_normalized_value, 0.36, 0.44)
+            and between(blue_normalized_value, 0.48, 0.72)
+        ):
+            return Color.BLUE
+        elif (
+            green_normalized_value != 0
+            and red_normalized_value / green_normalized_value <= 0.5
+            and blue_normalized_value / green_normalized_value <= 0.5
+        ):
+            return Color.GREEN
+        elif (
+            between(red_normalized_value, 0.71, 0.8)
+            and between(green_normalized_value, 0.46, 0.5)
+            and between(blue_normalized_value, 0.07, 0.14)
+        ):
+            return Color.YELLOW
+        elif (
+            red_normalized_value == 0
+            and green_normalized_value == 0
+            and blue_normalized_value == 0
+        ):
+            return "None"
+        elif (
+            between(red_normalized_value, 0.7, 1)
+            and between(green_normalized_value, 0.7, 1)
+            and between(blue_normalized_value, 0.7, 1)
+        ):
+            return Color.WHITE
+        elif (
+            between(red_normalized_value, 0.57, 0.73)
+            and between(green_normalized_value, 0.05, 0.07)
+            and between(blue_normalized_value, 0, 0.05)
+        ):
+            return Color.RED
+        else:
+            return Color.BLACK
