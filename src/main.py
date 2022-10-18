@@ -214,25 +214,16 @@ def test_katara():
     )
 
     katara.motor_claw.run_target(300, 300)
-    wait_button_pressed(katara.brick)
 
     water_position_routine(katara)
-    katara.brick.speaker.beep()
     delivery = None
 
     while True:
-        gas_duct_routine(katara, delivery=delivery)
-        katara.brick.speaker.beep()
-
+        measured_value = gas_duct_routine(katara, delivery=delivery)
         back_from_water_routine(katara)
-        katara.brick.speaker.beep()
-
         duct_get(katara)
-        katara.brick.speaker.beep()
-
         back_to_water_routine(katara)
-        katara.brick.speaker.beep()
-        delivery = 10
+        delivery = measured_value
 
 
 def white_calibration():
@@ -318,11 +309,11 @@ def color_guessing():
 
     robot.brick.speaker.beep()
     while not robot.brick.buttons.pressed():
-        robot.ev3_print(
-            robot.color_l.rgb(),
-            normalize_color(robot.color_l.rgb()),
-            robot.accurate_color(robot.color_l.rgb()),
-        )
+        # robot.ev3_print(
+        #     robot.color_l.rgb(),
+        #     normalize_color(robot.color_l.rgb()),
+        #     robot.accurate_color(robot.color_l.rgb()),
+        # )
         robot.ev3_print(
             robot.color_r.rgb(),
             normalize_color(robot.color_r.rgb()),
@@ -332,4 +323,4 @@ def color_guessing():
 
 
 if __name__ == "__main__":
-    main()
+    test_katara()

@@ -137,8 +137,8 @@ class Robot:
         reflection_diff=10,
         avoid_obstacles=False,
         pid: PIDValues = PIDValues(
-            kp=0.8,
-            ki=0.001,
+            kp=1,
+            ki=0.1,
             kd=1,
         ),
     ):
@@ -181,6 +181,11 @@ class Robot:
                 motor_error_d = motor_error - prev_motor_error
                 prev_motor_error = motor_error
 
+                # self.ev3_print(
+                #     motor_error,
+                #     motor_error_i,
+                #     motor_error_d,
+                # )
                 pid_speed = (
                     pid.kp * motor_error
                     + pid.ki * motor_error_i
@@ -816,7 +821,7 @@ class Robot:
         - single_motor é um motor opcional caso queira executar o movimento apenas com o motor
         desejado. Se não for passado, os dois motores básicos são usados por padrão.
         """
-        self.ev3_print(self.move_to_distance.__name__)
+        self.ev3_print(self.move_to_distance.__name__, distance)
 
         if max_cm is not None:
             max_motor_degrees = self.cm_to_motor_degrees(max_cm)
@@ -833,18 +838,21 @@ class Robot:
             diff = sensor.distance() - distance
             diff_i += diff
             diff_d = diff - prev_diff
-            # ev3_print(diff, diff_i, diff_d, ev3=self.brick)
 
             pid_speed = diff * pid.kp + diff_i * pid.ki + diff_d * pid.kd
 
+            self.ev3_print(diff, diff_i, diff_d, pid_speed)
             if abs(pid_speed) < 10:
                 break
 
-            self.ev3_print(pid_speed)
             self.motor_l.dc(pid_speed * (1 + turning))
             self.motor_r.dc(pid_speed * (1 - turning))
 
-            if max_motor_degrees is not None and (
+            self.ev3_print(
+                abs(initial_degrees_l - self.motor_l.angle()),
+                abs(initial_degrees_r - self.motor_r.angle()),
+            )
+            if max_cm is not None and (
                 abs(initial_degrees_l - self.motor_l.angle()) > max_motor_degrees
                 or abs(initial_degrees_r - self.motor_r.angle()) > max_motor_degrees
             ):

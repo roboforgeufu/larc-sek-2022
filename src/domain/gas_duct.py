@@ -31,6 +31,12 @@ def gas_duct_routine(robot: Robot, delivery=None):
             if check_hole(robot):
                 # buraco
                 measured_value = duct_measure_hole(robot)
+                # ###
+                robot.brick.speaker.beep()
+                robot.ev3_print(measured_value)
+                wait_button_pressed(robot.brick)
+                # ###
+
                 if delivery is not None and measured_value > 0:
                     if delivery == measured_value:
                         duct_deliver(robot, measured_value)

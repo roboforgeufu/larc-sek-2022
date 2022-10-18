@@ -144,9 +144,9 @@ def back_from_water_routine(robot: Robot):
 
     robot.pid_turn(-90)
     robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
-    robot.pid_walk(20, -80)
+    robot.pid_walk(8, -80)
     robot.pid_turn(-90)
-    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
+    ramp_follower(robot)
     robot.pid_walk(10, -80)
 
     robot.pid_turn(90)
@@ -169,5 +169,32 @@ def back_to_water_routine(robot: Robot):
     """O robô está na rampa, desce para a água e vira para a direita."""
     robot.pid_walk(8, vel=-30)
     robot.pid_turn(180)
-    robot.simple_walk(-80, speed_l=30, speed_r=30)
+    robot.simple_walk(-60, speed_l=30, speed_r=30)
     robot.pid_turn(-90)
+
+    ramp_follower(robot)
+
+    robot.pid_walk(8, -80)
+    robot.pid_turn(-90)
+    robot.pid_walk(8, 80)
+    robot.pid_turn(90)
+
+
+def ramp_follower(robot: Robot):
+    while (
+        robot.accurate_color(robot.color_l.rgb()) != "None"
+        and robot.accurate_color(robot.color_r.rgb()) != "None"
+    ):
+        # robot.ev3_print(robot.accurate_color(robot.color_r.rgb()))
+        if robot.accurate_color(robot.color_r.rgb()) == "None":
+            robot.motor_r.dc(0)
+        elif robot.accurate_color(robot.color_r.rgb()) == Color.GREEN:
+            robot.motor_r.dc(80)
+            robot.motor_l.dc(30)
+        else:
+            robot.motor_r.dc(30)
+            robot.motor_l.dc(80)
+
+        if robot.accurate_color(robot.color_l.rgb()) == "None":
+            robot.motor_l.dc(0)
+    robot.off_motors()
