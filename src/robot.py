@@ -161,7 +161,13 @@ class Robot:
         stopped_r = False
         while not stopped_l or not stopped_r:
             if avoid_obstacles and self.ultra_front.distance() < const.OBSTACLE_DIST:
+                self.brick.speaker.beep(100)
+                self.pid_walk(10, -50)
                 self.pid_turn(90)
+                self.motor_l.reset_angle(0)
+                self.motor_r.reset_angle(0)
+                self.brick.speaker.beep(1000)
+                continue
 
             diff_ref_r = self.color_r.reflection() - starting_ref_r
             diff_ref_l = self.color_l.reflection() - starting_ref_l

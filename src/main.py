@@ -217,18 +217,22 @@ def test_katara():
     wait_button_pressed(katara.brick)
 
     water_position_routine(katara)
-    wait_button_pressed(katara.brick)
+    katara.brick.speaker.beep()
+    delivery = None
 
-    gas_duct_routine(katara)
-    wait_button_pressed(katara.brick)
+    while True:
+        gas_duct_routine(katara, delivery=delivery)
+        katara.brick.speaker.beep()
 
-    back_from_water_routine(katara)
-    wait_button_pressed(katara.brick)
+        back_from_water_routine(katara)
+        katara.brick.speaker.beep()
 
-    duct_get(katara)
+        duct_get(katara)
+        katara.brick.speaker.beep()
 
-    wait_button_pressed(katara.brick)
-    back_to_water_routine(katara)
+        back_to_water_routine(katara)
+        katara.brick.speaker.beep()
+        delivery = 10
 
 
 def white_calibration():

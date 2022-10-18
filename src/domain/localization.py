@@ -6,7 +6,7 @@ from pybricks.parameters import Color
 
 import constants as const
 from robot import Robot
-from utils import PIDValues, ev3_print, wait_button_pressed
+from utils import PIDValues, accurate_color, ev3_print, wait_button_pressed
 
 
 def check_land_position_by_color(robot: Robot) -> str:
@@ -45,7 +45,7 @@ def water_position_routine(robot: Robot):
     """Rotina de identificação de posição no mapa do robô da água."""
     while True:
         robot.forward_while_same_reflection(
-            80, 100, avoid_obstacles=True, reflection_diff=20
+            60, 60, avoid_obstacles=True, reflection_diff=20
         )
         robot.pid_walk(2, -30)
         robot.pid_align()
@@ -141,20 +141,14 @@ def land_position_routine(robot: Robot):
 
 
 def back_from_water_routine(robot: Robot):
-    robot.pid_turn(-90)
-    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
-    robot.pid_walk(10, -80)
-    robot.pid_turn(-90)
-    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
 
-    robot.pid_walk(10, -80)
-    robot.pid_turn(90)
-    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
-    robot.pid_walk(10, -80)
     robot.pid_turn(-90)
     robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
+    robot.pid_walk(20, -80)
+    robot.pid_turn(-90)
+    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
+    robot.pid_walk(10, -80)
 
-    robot.simple_walk(-40, speed=30)
     robot.pid_turn(90)
     robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
 
@@ -162,10 +156,18 @@ def back_from_water_routine(robot: Robot):
     robot.forward_while_same_reflection(
         speed_r=80, speed_l=80, reflection_diff=const.COL_REFLECTION_HOLE_DIFF
     )
-    robot.pid_walk(20)
+    robot.pid_walk(23)
+    robot.pid_turn(-90)
+    robot.forward_while_same_reflection()
+    robot.pid_align()
+
+    robot.pid_walk(40, vel=-30)
+    robot.pid_turn(90)
 
 
 def back_to_water_routine(robot: Robot):
     """O robô está na rampa, desce para a água e vira para a direita."""
-    robot.simple_walk(70, speed_l=50, speed_r=55)
-    robot.simple_turn(90, speed=-50)
+    robot.pid_walk(8, vel=-30)
+    robot.pid_turn(180)
+    robot.simple_walk(-80, speed_l=30, speed_r=30)
+    robot.pid_turn(-90)

@@ -26,11 +26,12 @@ def gas_duct_routine(robot: Robot, delivery=None):
                 robot.motor_l.dc(30)
                 robot.motor_r.dc(30)
             robot.off_motors()
+
             robot.simple_walk(1, 30)
             if check_hole(robot):
                 # buraco
                 measured_value = duct_measure_hole(robot)
-                if delivery is not None:
+                if delivery is not None and measured_value > 0:
                     if delivery == measured_value:
                         duct_deliver(robot, measured_value)
                         delivery = None
@@ -95,14 +96,16 @@ def duct_measure_hole(robot: Robot):
 
     measurement = robot.hole_measurement()
 
-    robot.ev3_print(measurement)
+    robot.ev3_print("MEASURE:", measurement)
     if measurement > 17:
         measured_value = 20
     elif measurement > 12:
         measured_value = 15
-    else:
+    elif measurement >= 10:
         measured_value = 10
-    robot.ev3_print(measured_value, "cm")
+    else:
+        measured_value = 0
+    robot.ev3_print("S_MEASURE:", measured_value)
     return measured_value
 
 
@@ -152,14 +155,14 @@ def duct_deliver(robot: Robot, measured_value: int):
 def duct_get(robot: Robot):
     """Recolhe o duto na terra"""
     # recolhe o duto
-    robot.min_aligner(robot.ultra_front.distance)
-    robot.move_to_distance(80, robot.ultra_front)
-    robot.min_aligner(robot.ultra_front.distance)
+    robot.move_to_distance(120, robot.ultra_front)
 
     robot.motor_claw.run_target(300, 0)
 
-    robot.pid_walk(cm=10, vel=30)
+    robot.pid_walk(cm=14, vel=30)
     robot.off_motors()
     robot.motor_claw.run_target(300, 300)
     robot.pid_turn(180)
     robot.forward_while_same_reflection()
+    robot.pid_walk(cm=2, vel=-30)
+    robot.pid_align()
