@@ -543,12 +543,11 @@ class Robot:
 
     def pid_align(
         self,
-        pid: PIDValues = PIDValues(target=30, kp=0.7, ki=0.001, kd=0.3),
+        pid: PIDValues = PIDValues(target=30, kp=2, ki=0.001, kd=0.3),
     ):
         """
         Alinha usando os dois pares (motor - sensor de cor) e controle PID.
         """
-        i = 0
         correction_factor = 0.9
         left_error_i = 0
         right_error_i = 0
@@ -557,6 +556,7 @@ class Robot:
 
         has_stopped_left = False
         has_stopped_right = False
+
         while not has_stopped_left and not has_stopped_right:
             left_error = self.color_l.reflection() - pid.target
             right_error = self.color_r.reflection() - (pid.target * correction_factor)
@@ -570,7 +570,6 @@ class Robot:
             left_prev_error = left_error
             right_prev_error = right_error
 
-            # ev3_print(left_error, left_error_i, left_error_d)
             left_pid_speed = (
                 pid.kp * left_error + pid.ki * left_error_i + pid.kd * left_error_d
             )
@@ -588,10 +587,10 @@ class Robot:
             self.motor_l.dc(left_pid_speed)
             self.motor_r.dc(right_pid_speed)
 
-            if abs(left_error) < 5 and abs(right_error) < 5:
-                i = i + 1
-                if i >= 50:
-                    break
+            # self.ev3_print(left_error, right_error)
+            if abs(left_error) <= 7 and abs(right_error) <= 7:
+                break
+        self.off_motors()
 
     def pid_line_grabber(  # pylint: disable=invalid-name
         self,
