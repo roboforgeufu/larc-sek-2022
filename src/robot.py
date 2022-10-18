@@ -648,6 +648,41 @@ class Robot:
         self.motor_l.hold()
         self.motor_r.hold()
 
+    def line_follower_color_id(self,sensor,vel=80,array=None,break_color="None"):
+        while True:
+            if array is None:
+                array = []
+            valid_colors = [Color.YELLOW, Color.BLUE, Color.RED]
+
+            sign = 1 if sensor == self.color_l else -1
+            if (
+                (self.accurate_color(sensor.rgb()) != Color.WHITE)
+                and (self.accurate_color(sensor.rgb()) != Color.BLACK)
+                and (self.accurate_color(sensor.rgb()) != "None")
+            ):
+                print("----")
+                sign = sign * (-1)
+
+            print(sign,color_read)
+            self.motor_r.dc(vel + (vel * 0.1 * sign))
+            self.motor_l.dc(vel - (vel * 0.1 * sign))
+
+            color_read = self.accurate_color(sensor.rgb())
+            if color_read not in array and color_read in valid_colors:
+                array.append(self.accurate_color(sensor.rgb()))
+
+            if break_color is "None":
+                if len(array) >= 2:
+                    break
+            else:
+                if color_read == break_color:
+                    break
+
+        self.motor_r.hold()
+        self.motor_l.hold()
+
+        return array
+
     def pid_line_follower_color_id(
         self,
         vel,
