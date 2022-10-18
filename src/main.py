@@ -107,65 +107,58 @@ def land_main(toph: Robot):
     # server.wait_for_connection()
     # toph.ev3_print("SERVER: connected!")
 
-    # # espera a katara sair da meeting area
-    # # antes de comecar a rotina de localizacao
+    # # # espera a katara sair da meeting area
+    # # # antes de comecar a rotina de localizacao
     # logic_mbox = LogicMailbox("start", server)
 
-    # # espera a katara falar q conectou
+    # # # espera a katara falar q conectou
     # logic_mbox.wait()
     # logic_mbox.send(True)
 
-    # # katara desceu a rampa
+    # # # katara desceu a rampa
     # logic_mbox.wait()
 
     # # algoritmo de localizacao terrestre
-    # color_order = land_position_routine(toph)
-    # valid_colors = [Color.YELLOW, Color.RED, Color.BLUE]
-    # for color in valid_colors:
-    #     if color not in color_order:
-    #         color_order.append(color)
-    # ev3_print(color_order)
+    color_order = land_position_routine(toph)
+    valid_colors = [Color.YELLOW, Color.RED, Color.BLUE]
+    for color in valid_colors:
+        if color not in color_order:
+            color_order.append(color)
+    ev3_print(color_order)
     # # termina com o sensor no buraco na primeira cor da esquerda p/ a direita
 
     # # manobras
-    # toph.pid_walk(cm=5, vel=-60)
-    # toph.pid_turn(90)
-    # toph.pid_walk(cm=5, vel=-60)
-    # toph.forward_while_same_reflection()
-    # toph.pid_walk(cm=7, vel=-60)
-
-    # toph.certify_line_alignment_routine(
-    #     target_color=Color.BLACK, sensor_color=toph.color_l, motor=toph.motor_l
-    # )
+    toph.pid_walk(cm=5, vel=-60)
+    toph.pid_turn(90)
+    toph.pid_walk(cm=5, vel=-60)
+    toph.forward_while_same_reflection()
+    toph.pid_walk(cm=7, vel=-60)
+    toph.certify_line_alignment_routine(
+        target_color=Color.BLACK, sensor_color=toph.color_l, motor=toph.motor_l
+    )
     # termina com o sensor esquerdo sobre a linha preta da primeira cor
 
     # dutos subsequentes (comunicação bluetooth)
+    # numeric_mbox = NumericMailbox("measures", server)
+    while True:
 
-    # num_mbox = NumericMailbox("measures", server)
-    # while True:
+        # numeric_mbox.wait()
+        # num = numeric_mbox.read()
+        num = 10
 
-    # num_mbox.wait()
-    # num = num_mbox.read()
-    num = 20
-    color_order = [Color.YELLOW, Color.BLUE, Color.RED]
+        if num == 10:
+            toph.line_follower_color_id(toph.color_l, break_color=Color.YELLOW)
+            index = color_order.index(Color.YELLOW)
+        if num == 15:
+            toph.line_follower_color_id(toph.color_l, break_color=Color.RED)
+            index = color_order.index(Color.RED)
+        if num == 20:
+            toph.line_follower_color_id(toph.color_l, break_color=Color.BLUE)
+            index = color_order.index(Color.BLUE)
 
-    wait_button_pressed(toph.brick)
-    if num == 10:
-        toph.line_follower_color_id(toph.color_l, break_color=Color.YELLOW)
-        index = color_order.index(Color.YELLOW)
-    if num == 15:
-        toph.line_follower_color_id(toph.color_l, break_color=Color.RED)
-        index = color_order.index(Color.RED)
-    if num == 20:
-        toph.line_follower_color_id(toph.color_l, break_color=Color.BLUE)
-        index = color_order.index(Color.BLUE)
-
-    color_order.append(None)
-    print(color_order[index + 1])
-
-    wait_button_pressed(toph.brick)
-
-    duct_seek_routine_new(toph, color_order[index + 1])
+        color_order.append(None)
+        duct_seek_routine_new(toph, color_order[index + 1])
+        # numeric_mbox.send(0)
 
 
 def water_main(katara: Robot):
@@ -188,13 +181,21 @@ def water_main(katara: Robot):
     # Espera confirmação da Toph
     logic_mbox.wait()
 
+    katara.motor_claw.run_target(300, 300)
     water_position_routine(katara)
 
     # Avisa toph que está fora da meeting area
     logic_mbox.send(True)
+    delivery = None
 
-    measured_value = gas_duct_routine(katara)
-    numeric_mbox.send(measured_value)
+    while True:
+        measured_value = gas_duct_routine(katara, delivery=delivery)
+        numeric_mbox.send(measured_value)
+        numeric_mbox.wait()
+        back_from_water_routine(katara)
+        duct_get(katara)
+        back_to_water_routine(katara)
+        delivery = measured_value
 
 
 def test_katara():
