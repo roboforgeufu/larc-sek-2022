@@ -6,7 +6,7 @@ from pybricks.parameters import Color
 
 import constants as const
 from robot import Robot
-from utils import PIDValues, accurate_color, ev3_print, wait_button_pressed
+from utils import PIDValues, ev3_print, wait_button_pressed
 
 
 def check_land_position_by_color(robot: Robot) -> str:
