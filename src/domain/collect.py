@@ -6,7 +6,7 @@ from pybricks.tools import wait
 
 import constants as const
 from robot import Robot
-from utils import accurate_color, ev3_print
+from utils import ev3_print, PIDValues
 
 # def duct_ends(
 #     robot: Robot,
@@ -180,9 +180,9 @@ def duct_seek_routine(robot: Robot):
 
         # verifica se o duto é coletável
         if (
-            (accurate_color(robot.color_l.rgb()) == Color.YELLOW and arc_length > 5)
-            or (accurate_color(robot.color_l.rgb()) == Color.RED and arc_length > 10)
-            or (accurate_color(robot.color_l.rgb()) == Color.BLUE and arc_length > 15)
+            (robot.accurate_color(robot.color_l.rgb()) == Color.YELLOW and arc_length > 5)
+            or (robot.accurate_color(robot.color_l.rgb()) == Color.RED and arc_length > 10)
+            or (robot.accurate_color(robot.color_l.rgb()) == Color.BLUE and arc_length > 15)
         ):
 
             # recolhe o duto
@@ -227,7 +227,7 @@ def duct_seek_routine_new(robot: Robot,color):
     measurements = []
     travelled_distance = 0
 
-    while(accurate_color(robot.color_l.rgb())!=color):
+    while(robot.accurate_color(robot.color_l.rgb())!=color):
         robot.motor_l.reset_angle(0)
         robot.motor_r.reset_angle(0)
         
@@ -276,7 +276,7 @@ def duct_seek_routine_new(robot: Robot,color):
     robot.pid_walk(cm=13, vel=-60)
     robot.pid_turn(-90)
     robot.forward_while_same_reflection()
-    robot.pid_align()
+    robot.pid_align(PIDValues(target=30, kp=0.7, ki=0.001, kd=0.3))
 
     # deixa o duto a 40cm do buraco
     robot.pid_walk(cm=40, vel=-60)

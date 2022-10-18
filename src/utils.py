@@ -68,60 +68,7 @@ def between(value, min_value, max_value):
     )
 
 
-def accurate_color(rgb_tuple):
-    """ 
-    Processamento de cor pra evitar os erros da leitura padrão.
-    """
-    red_value = rgb_tuple[0]
-    green_value = rgb_tuple[1]
-    blue_value = rgb_tuple[2]
 
-    max_value = 65
-
-    
-
-    red_normalized_value = normalize_color(red_value)
-    green_normalized_value = normalize_color(green_value)
-    blue_normalized_value = normalize_color(blue_value)
-
-    if (
-        between(red_normalized_value, 0.11, 0.15)
-        and between(green_normalized_value, 0.36, 0.44)
-        and between(blue_normalized_value, 0.48, 0.72)
-    ):
-        return Color.BLUE
-    elif (
-        green_normalized_value != 0
-        and red_normalized_value / green_normalized_value <= 0.5
-        and blue_normalized_value / green_normalized_value <= 0.5
-    ):
-        return Color.GREEN
-    elif (
-        between(red_normalized_value, 0.71, 0.8)
-        and between(green_normalized_value, 0.46, 0.5)
-        and between(blue_normalized_value, 0.07, 0.14)
-    ):
-        return Color.YELLOW
-    elif (
-        red_normalized_value == 0
-        and green_normalized_value == 0
-        and blue_normalized_value == 0
-    ):
-        return "None"
-    elif (
-        between(red_normalized_value, 0.7, 1)
-        and between(green_normalized_value, 0.7, 1)
-        and between(blue_normalized_value, 0.7, 1)
-    ):
-        return Color.WHITE
-    elif (
-        between(red_normalized_value, 0.57, 0.73)
-        and between(green_normalized_value, 0.05, 0.07)
-        and between(blue_normalized_value, 0, 0.05)
-    ):
-        return Color.RED
-    else:
-        return Color.BLACK
 
 
 def wait_button_pressed(ev3: EV3Brick, button: Button = Button.CENTER):
