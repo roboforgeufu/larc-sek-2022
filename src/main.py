@@ -80,6 +80,7 @@ def main():
                 ultra_front=Port.S4,
                 debug=True,
                 turn_correction=const.KATARA_TURN_CORRECTION,
+                color_max_value=65,
             )
         )
     elif hostname == "toph":
@@ -95,6 +96,7 @@ def main():
                 color_l=Port.S1,
                 color_r=Port.S2,
                 turn_correction=0.9,
+                color_max_value=100,
                 debug=True,
             )
         )
@@ -121,31 +123,23 @@ def land_main(toph: Robot):
     # # katara desceu a rampa
     # logic_mbox.wait()
 
-    # duct_seek_routine_new(toph,Color.RED)
-    # wait_button_pressed(toph.brick)
-
-    while True:
-
-       color_left = normalize_color(toph.color_l.rgb())
-       color_right = normalize_color(toph.color_r.rgb())
-       toph.ev3_print(color_left, color_right, clear=True)
 
     # algoritmo de localizacao terrestre
-    # color_order = land_position_routine(toph)
-    # valid_colors = [Color.YELLOW, Color.RED, Color.BLUE]
-    # for color in valid_colors:
-    #     if color not in color_order:
-    #         color_order.append(color)
-    # ev3_print(color_order)
+    color_order = land_position_routine(toph)
+    valid_colors = [Color.YELLOW, Color.RED, Color.BLUE]
+    for color in valid_colors:
+        if color not in color_order:
+            color_order.append(color)
+    ev3_print(color_order)
     # termina com o sensor no buraco na primeira cor da esquerda p/ a direita
 
     # manobras
-    # toph.pid_walk(cm=13, vel=-60)
-    # toph.pid_turn(90)
-    # toph.pid_walk(cm=10, vel=-60)
-    # toph.forward_while_same_reflection()
-    # toph.pid_walk(cm=7, vel=-60)
-    # toph.one_wheel_turn(700, toph.motor_l)
+    toph.pid_walk(cm=13, vel=-60)
+    toph.pid_turn(90)
+    toph.pid_walk(cm=10, vel=-60)
+    toph.forward_while_same_reflection()
+    toph.pid_walk(cm=7, vel=-60)
+    toph.one_wheel_turn(700, toph.motor_l)
     # termina com o sensor esquerdo sobre a linha preta da primeira cor
 
     # dutos subsequentes (comunicação bluetooth)
@@ -155,7 +149,6 @@ def land_main(toph: Robot):
 
         # num_mbox.wait()
         # num = num_mbox.read()
-        color_order = [Color.BLUE,Color.RED,Color.YELLOW]
         num = 10
 
         if num == 10:
@@ -335,4 +328,4 @@ def color_guessing():
 
 
 if __name__ == "__main__":
-    color_calibration()
+    main()

@@ -642,10 +642,11 @@ class Robot:
             if self.stopwatch.time() > time:
                 break
 
-            if ref_read == "None":
+            if ref_read < 5:
                 break
 
-        self.off_motors()
+        self.motor_l.hold()
+        self.motor_r.hold()
 
     def pid_line_follower_color_id(
         self,
@@ -704,10 +705,11 @@ class Robot:
 
             color_read = self.accurate_color(sensor.rgb())
             if color_read not in array and color_read in valid_colors:
-                array.append(accurate_color(sensor.rgb()))
+                array.append(self.accurate_color(sensor.rgb()))
 
             if self.accurate_color(sensor.rgb()) != None:
                 break_array.append(self.accurate_color(sensor.rgb()))
+
             if len(break_array) > 2:
                 break_array.clear()
             if break_array.count("None") == 2:

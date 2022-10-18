@@ -6,7 +6,7 @@ from pybricks.parameters import Color
 
 import constants as const
 from robot import Robot
-from utils import ev3_print, wait_button_pressed
+from utils import ev3_print, wait_button_pressed, PIDValues
 
 
 def check_land_position_by_color(robot: Robot) -> str:
@@ -95,8 +95,8 @@ def land_position_routine(robot: Robot):
     while True:
         robot.forward_while_same_reflection(80, 80, 10)
         robot.pid_walk(cm=2, vel=-60)
-        robot.pid_align()
-        robot.pid_walk(cm=3, vel=40)
+        robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
+        robot.pid_walk(cm=1, vel=40)
         location = check_land_position_by_color(robot)
 
         if location == "RAMP":
