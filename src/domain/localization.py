@@ -6,7 +6,7 @@ from pybricks.parameters import Color
 
 import constants as const
 from robot import Robot
-from utils import PIDValues, accurate_color, ev3_print, wait_button_pressed
+from utils import PIDValues, ev3_print, wait_button_pressed
 
 
 def check_land_position_by_color(robot: Robot) -> str:
@@ -106,26 +106,28 @@ def land_position_routine(robot: Robot):
 
         elif location == "COLOR":
 
-            robot.pid_walk(cm=8, vel=-60)
-            robot.one_wheel_turn(800, robot.motor_r)
+            robot.pid_walk(cm=7, vel=-60)
+            robot.certify_line_alignment_routine(
+                target_color=Color.BLACK,
+                sensor_color=robot.color_r,
+                motor=robot.motor_r,
+            )
 
-            # Curva com um sensor até a linha
-            # Curva com um sensor até depois da linha
-
-            robot.pid_line_grabber(100, 2000, robot.color_r)
-            color_order = robot.pid_line_follower_color_id(80, robot.color_r)
+            color_order = robot.line_follower_color_id(robot.color_r)
             if len(color_order) < 2:
                 robot.pid_accelerated_walk(-500, 2)
-                robot.pid_turn(170)
+                robot.pid_turn(180)
+                #####
                 robot.pid_line_grabber(100, 2000, robot.color_l)
-                color_order = robot.pid_line_follower_color_id(
-                    80, robot.color_l, color_order
+                color_order = robot.line_follower_color_id(
+                    robot.color_l, array=color_order
                 )
                 ev3_print(color_order, ev3=robot.brick)
                 robot.pid_accelerated_walk(-500, 2)
-                robot.pid_turn(190)
+                robot.pid_turn(180)
+                #####
                 robot.pid_line_grabber(100, 2000, robot.color_r)
-                robot.pid_line_follower_color_id(80, robot.color_r)
+                robot.line_follower_color_id(robot.color_r)
             break
 
         elif location == "EDGE":

@@ -30,12 +30,7 @@ from pybricks.parameters import Color, Port
 from pybricks.tools import DataLog, wait
 
 import constants as const
-from domain.collect import (
-    align_duct_center,
-    duct_ends,
-    duct_seek_routine,
-    duct_seek_routine_new,
-)
+from domain.collect import align_duct_center, duct_ends, duct_seek_routine_new
 from domain.gas_duct import (
     armagedon_the_end_of_times,
     check_hole,
@@ -123,48 +118,54 @@ def land_main(toph: Robot):
     # # katara desceu a rampa
     # logic_mbox.wait()
 
-    # algoritmo de localizacao terrestre
-    color_order = land_position_routine(toph)
-    valid_colors = [Color.YELLOW, Color.RED, Color.BLUE]
-    for color in valid_colors:
-        if color not in color_order:
-            color_order.append(color)
-    ev3_print(color_order)
-    # termina com o sensor no buraco na primeira cor da esquerda p/ a direita
+    # # algoritmo de localizacao terrestre
+    # color_order = land_position_routine(toph)
+    # valid_colors = [Color.YELLOW, Color.RED, Color.BLUE]
+    # for color in valid_colors:
+    #     if color not in color_order:
+    #         color_order.append(color)
+    # ev3_print(color_order)
+    # # termina com o sensor no buraco na primeira cor da esquerda p/ a direita
 
-    # manobras
-    toph.pid_walk(cm=13, vel=-60)
-    toph.pid_turn(90)
-    toph.pid_walk(cm=10, vel=-60)
-    toph.forward_while_same_reflection()
-    toph.pid_walk(cm=7, vel=-60)
-    toph.one_wheel_turn(700, toph.motor_l)
+    # # manobras
+    # toph.pid_walk(cm=5, vel=-60)
+    # toph.pid_turn(90)
+    # toph.pid_walk(cm=5, vel=-60)
+    # toph.forward_while_same_reflection()
+    # toph.pid_walk(cm=7, vel=-60)
+
+    # toph.certify_line_alignment_routine(
+    #     target_color=Color.BLACK, sensor_color=toph.color_l, motor=toph.motor_l
+    # )
     # termina com o sensor esquerdo sobre a linha preta da primeira cor
 
     # dutos subsequentes (comunicação bluetooth)
 
     # num_mbox = NumericMailbox("measures", server)
-    while True:
+    # while True:
 
-        # num_mbox.wait()
-        # num = num_mbox.read()
-        num = 10
+    # num_mbox.wait()
+    # num = num_mbox.read()
+    num = 20
+    color_order = [Color.YELLOW, Color.BLUE, Color.RED]
 
-        if num == 10:
-            toph.pid_line_grabber(100, 2000, toph.color_l)
-            toph.pid_line_follower_color_id(80, toph.color_l, break_color=Color.YELLOW)
-            index = color_order.index(Color.YELLOW)
-        if num == 15:
-            toph.pid_line_grabber(100, 2000, toph.color_l)
-            toph.pid_line_follower_color_id(80, toph.color_l, break_color=Color.RED)
-            index = color_order.index(Color.RED)
-        if num == 20:
-            toph.pid_line_grabber(100, 2000, toph.color_l)
-            toph.pid_line_follower_color_id(80, toph.color_l, break_color=Color.BLUE)
-            index = color_order.index(Color.BLUE)
+    wait_button_pressed(toph.brick)
+    if num == 10:
+        toph.line_follower_color_id(toph.color_l, break_color=Color.YELLOW)
+        index = color_order.index(Color.YELLOW)
+    if num == 15:
+        toph.line_follower_color_id(toph.color_l, break_color=Color.RED)
+        index = color_order.index(Color.RED)
+    if num == 20:
+        toph.line_follower_color_id(toph.color_l, break_color=Color.BLUE)
+        index = color_order.index(Color.BLUE)
 
-        color_order.append(None)
-        duct_seek_routine_new(toph, color_order[index + 1])
+    color_order.append(None)
+    print(color_order[index + 1])
+
+    wait_button_pressed(toph.brick)
+
+    duct_seek_routine_new(toph, color_order[index + 1])
 
 
 def water_main(katara: Robot):
