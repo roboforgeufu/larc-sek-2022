@@ -846,19 +846,20 @@ class Robot:
                 pid.kp * motor_error + pid.ki * motor_error_i + pid.kd * motor_error_d
             )
 
-            self.ev3_print("IR:", self.infra_side.distance())
+            # self.ev3_print("IR dff:", dist_diff, "|", motor_error)
 
-            # self.ev3_print(
-            #     motor_error,
-            #     motor_error_i,
-            #     motor_error_d,
-            #     "| COL_REFL:",
-            #     self.color_l.reflection(),
-            #     self.color_r.reflection(),
-            # )
+            self.ev3_print(
+                motor_error,
+                motor_error_i,
+                motor_error_d,
+            )
 
             # Condições de parada
-            if abs(motor_error) > 100 and abs(motor_error_d) > 60:
+            if (
+                abs(motor_error) > 100
+                and abs(motor_error_i) > 300
+                and abs(motor_error_d) > 60
+            ):
                 return_value = 1
                 break
             if front_sensor.distance() < 100:
@@ -888,7 +889,7 @@ class Robot:
 
         self.move_both_to_target(
             target_r=self.motor_r.angle() - final_diff / 2,
-            target_l=self.motor_l.angle(),
+            target_l=self.motor_l.angle() + final_diff / 2,
         )
 
         return return_value
@@ -1130,7 +1131,7 @@ class Robot:
         self.stopwatch.reset()
 
         if mode == 1:
-            while self.infra_side.distance() > 25 and (
+            while self.infra_side.distance() > const.WALL_SEEN_DIST and (
                 color_check_color is None
                 or self.accurate_color(color_check_sensor.rgb()) != color_check_color
             ):
@@ -1153,7 +1154,7 @@ class Robot:
                 self.motor_l.dc(-(vel - pid_correction))
 
         elif mode == 2:
-            while self.infra_side.distance() < 25 and (
+            while self.infra_side.distance() < const.WALL_SEEN_DIST and (
                 color_check_color is None
                 or self.accurate_color(color_check_sensor.rgb()) != color_check_color
             ):
@@ -1176,7 +1177,7 @@ class Robot:
                 self.motor_l.dc(vel + pid_correction)
 
         elif mode == 3:
-            while self.infra_side.distance() > 50 and (
+            while self.infra_side.distance() > const.WALL_SEEN_DIST and (
                 color_check_color is None
                 or self.accurate_color(color_check_sensor.rgb()) != color_check_color
             ):
@@ -1206,7 +1207,7 @@ class Robot:
                 self.motor_l.dc(vel + pid_correction)
 
         elif mode == 4:
-            while self.infra_side.distance() < 70 and (
+            while self.infra_side.distance() < const.WALL_SEEN_DIST and (
                 color_check_color is None
                 or self.accurate_color(color_check_sensor.rgb()) != color_check_color
             ):
