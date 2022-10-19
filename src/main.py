@@ -180,7 +180,7 @@ def water_main(katara: Robot):
     # Espera confirmação da Toph
     logic_mbox.wait()
 
-    katara.motor_claw.run_target(300, 300)
+    katara.motor_claw.run_target(300, const.CLAW_UP)
     water_position_routine(katara)
 
     # Avisa toph que está fora da meeting area
@@ -231,26 +231,17 @@ def test_katara():
         turn_correction=const.KATARA_TURN_CORRECTION,
     )
 
-    katara.motor_claw.run_target(300, 300)
-    wait_button_pressed(katara.brick)
+    katara.motor_claw.run_target(300, const.CLAW_UP)
 
     water_position_routine(katara)
-    katara.brick.speaker.beep()
     delivery = None
 
     while True:
-        gas_duct_routine(katara, delivery=delivery)
-        katara.brick.speaker.beep()
-
+        measured_value = gas_duct_routine(katara, delivery=delivery)
         back_from_water_routine(katara)
-        katara.brick.speaker.beep()
-
         duct_get(katara)
-        katara.brick.speaker.beep()
-
         back_to_water_routine(katara)
-        katara.brick.speaker.beep()
-        delivery = 10
+        delivery = measured_value
 
 
 def white_calibration():
@@ -336,11 +327,11 @@ def color_guessing():
 
     robot.brick.speaker.beep()
     while not robot.brick.buttons.pressed():
-        robot.ev3_print(
-            robot.color_l.rgb(),
-            normalize_color(robot.color_l.rgb()),
-            robot.accurate_color(robot.color_l.rgb()),
-        )
+        # robot.ev3_print(
+        #     robot.color_l.rgb(),
+        #     normalize_color(robot.color_l.rgb()),
+        #     robot.accurate_color(robot.color_l.rgb()),
+        # )
         robot.ev3_print(
             robot.color_r.rgb(),
             normalize_color(robot.color_r.rgb()),
