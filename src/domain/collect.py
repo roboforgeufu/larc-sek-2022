@@ -248,6 +248,7 @@ def duct_seek_routine_new(robot: Robot, color):
     robot.pid_walk(cm=25, vel=-30)
     robot.motor_claw.run_target(300, -10)
 
+def return_to_idle_position(robot: Robot):
     # alinha com o buraco restaurando a posicao inicial
     robot.pid_walk(cm=5, vel=-60)
     robot.pid_turn(-90)

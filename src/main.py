@@ -30,7 +30,7 @@ from pybricks.parameters import Color, Port
 from pybricks.tools import DataLog, wait
 
 import constants as const
-from domain.collect import align_duct_center, duct_ends, duct_seek_routine_new
+from domain.collect import align_duct_center, duct_ends, duct_seek_routine_new, return_to_idle_position
 from domain.gas_duct import (
     armagedon_the_end_of_times,
     check_hole,
@@ -164,6 +164,8 @@ def land_main(toph: Robot):
         color_order.append("None")
         duct_seek_routine_new(toph, color_order[index + 1])
         numeric_mbox.send(0)
+        return_to_idle_position(toph)
+        
 
 
 def water_main(katara: Robot):
