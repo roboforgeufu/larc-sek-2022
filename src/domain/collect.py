@@ -225,9 +225,9 @@ def duct_seek_routine_new(robot: Robot, color):
     # recolhe o duto
     dist = robot.ultra_front.distance()
     dist = max(1, dist - 5)
-    robot.move_to_distance(40, sensor=robot.ultra_front, max_cm=35)
+    robot.move_to_distance(50, sensor=robot.ultra_front, max_cm=35)
     robot.min_aligner(robot.ultra_front.distance)
-    robot.pid_walk(cm=7, vel=20)
+    robot.pid_walk(cm=8, vel=20)
     robot.off_motors()
     robot.motor_claw.reset_angle(0)
     robot.motor_claw.run_target(300, const.CLAW_UP)
