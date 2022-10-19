@@ -10,7 +10,7 @@ from utils import wait_button_pressed
 
 def gas_duct_routine(robot: Robot, delivery=None):
     robot.forward_while_same_reflection(reflection_diff=2)
-    robot.pid_walk(5, -40)
+    robot.pid_walk(8, -40)
     robot.pid_turn(-90)
 
     robot.move_to_distance(const.WALL_FOLLOWER_FRONT_DIST, sensor=robot.ultra_front)
