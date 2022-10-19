@@ -186,16 +186,26 @@ def water_main(katara: Robot):
 
     # Avisa toph que está fora da meeting area
     logic_mbox.send(True)
+
+    back_to_water_routine(katara)
+
     delivery = None
+
+    # Espera confirmação da Toph pra começar a seguir o gasoduto
+    logic_mbox.wait()
 
     while True:
         measured_value = gas_duct_routine(katara, delivery=delivery)
+        # Envia o valor
         numeric_mbox.send(measured_value)
+        # Espera confirmação
         numeric_mbox.wait()
+
         back_from_water_routine(katara)
         duct_get(katara)
         back_to_water_routine(katara)
         delivery = measured_value
+
 
 def test_toph():
     toph = Robot(
@@ -287,8 +297,12 @@ def test_katara():
 
     katara.motor_claw.run_target(300, const.CLAW_UP)
 
-    water_position_routine(katara)
-    delivery = None
+    # water_position_routine(katara)
+    # back_to_water_routine(katara)
+    # duct_get(katara)
+    # back_to_water_routine(katara)
+
+    delivery = 15
 
     while True:
         measured_value = gas_duct_routine(katara, delivery=delivery)
@@ -395,4 +409,4 @@ def color_guessing():
 
 
 if __name__ == "__main__":
-    test_toph()
+    test_katara()

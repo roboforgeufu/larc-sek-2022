@@ -10,7 +10,7 @@ from utils import wait_button_pressed
 
 def gas_duct_routine(robot: Robot, delivery=None):
     robot.forward_while_same_reflection(reflection_diff=2)
-    robot.pid_walk(5, -80)
+    robot.pid_walk(5, -40)
     robot.pid_turn(-90)
 
     robot.move_to_distance(const.WALL_FOLLOWER_FRONT_DIST, sensor=robot.ultra_front)
@@ -37,12 +37,13 @@ def gas_duct_routine(robot: Robot, delivery=None):
                 wait_button_pressed(robot.brick)
                 # ###
 
-                if delivery is not None and measured_value > 0:
-                    if delivery == measured_value:
-                        duct_deliver(robot, measured_value)
-                        delivery = None
-                else:
-                    return measured_value
+                if measured_value > 0:
+                    if delivery is not None:
+                        if delivery == measured_value:
+                            duct_deliver(robot, measured_value)
+                            delivery = None
+                    else:
+                        return measured_value
             else:
                 # curva pra dentro
                 duct_follower_turn_routine(robot)
@@ -134,14 +135,14 @@ def duct_deliver(robot: Robot, measured_value: int):
     robot.min_aligner(robot.infra_side.distance)
 
     robot.pid_turn(90)
-    robot.min_aligner(robot.ultra_front.distance, acceptable_range=30)
+    robot.min_aligner(robot.ultra_front.distance, acceptable_range=40)
 
     # Entrega
-    robot.move_to_distance(40, sensor=robot.ultra_front)
+    robot.move_to_distance(40, sensor=robot.ultra_front, safe_max_read=150)
 
     robot.motor_claw.run_target(100, 110)
 
-    robot.pid_walk(1, 25)
+    robot.pid_walk(1.5, 25)
     robot.motor_claw.run_target(100, 95)
 
     # Afasta levantando a garra e o sensor
