@@ -166,9 +166,10 @@ def duct_seek_routine_new(robot: Robot, color):
         robot.motor_r.reset_angle(0)
 
         robot.brick.light.on(Color.ORANGE)
-        robot.walk_to_hole(
-            mode=3, color_check_color=color, color_check_sensor=robot.color_l
-        )
+        # robot.walk_to_hole(
+        #     mode=3, color_check_color=color, color_check_sensor=robot.color_l
+        # )
+        robot.walk_till_duct(color_check_color=color, color_check_sensor=robot.color_l)
         robot.brick.light.off()
         robot.brick.speaker.beep()
 

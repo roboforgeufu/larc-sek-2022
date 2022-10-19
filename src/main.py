@@ -125,6 +125,7 @@ def land_main(toph: Robot):
         if color not in color_order:
             color_order.append(color)
     ev3_print(color_order)
+    logic_mbox.send(True)
     # termina com o sensor no buraco na primeira cor da esquerda p/ a direita
 
     # manobras
@@ -212,7 +213,60 @@ def test_toph():
         debug=True,
     )
 
-    toph.line_follower_color_id(toph.color_l)
+    # toph.pid_line_grabber(100, 3000, toph.color_l)
+    # toph.line_follower_color_id(toph.color_l)
+    # wait_button_pressed(toph.brick)
+
+
+    # toph.pid_turn(45)
+    # wait_button_pressed(toph.brick)
+    # toph.pid_turn(90)
+    # wait_button_pressed(toph.brick)
+    # toph.pid_turn(-180)
+    # wait_button_pressed(toph.brick)
+
+
+    # color_order = []
+    # color_order = land_position_routine(toph)
+    # valid_colors = [Color.YELLOW, Color.RED, Color.BLUE]
+    # for color in valid_colors:
+    #     if color not in color_order:
+    #         color_order.append(color)
+    # ev3_print(color_order)
+    # # termina com o sensor no buraco na primeira cor da esquerda p/ a direita
+
+    # # manobras
+    # toph.pid_walk(cm=5, vel=-60)
+    # toph.pid_turn(90)
+    # toph.pid_walk(cm=5, vel=-60)
+    # toph.forward_while_same_reflection()
+    # toph.pid_walk(cm=7, vel=-60)
+    # toph.certify_line_alignment_routine(
+    #     target_color=Color.BLACK, sensor_color=toph.color_l, motor=toph.motor_l
+    # )
+    # wait_button_pressed(toph.brick)
+    # # termina com o sensor esquerdo sobre a linha preta da primeira cor
+
+    # # dutos subsequentes (comunicação bluetooth)
+
+    color_order = [Color.YELLOW,Color.RED,Color.BLUE]
+    num = 10
+    toph.pid_line_grabber(100, 3000, toph.color_l)
+
+    while True:
+        if num == 10:
+            toph.line_follower_color_id(toph.color_l, break_color=Color.YELLOW)
+            index = color_order.index(Color.YELLOW)
+        if num == 15:
+            toph.line_follower_color_id(toph.color_l, break_color=Color.RED)
+            index = color_order.index(Color.RED)
+        if num == 20:
+            toph.line_follower_color_id(toph.color_l, break_color=Color.BLUE)
+            index = color_order.index(Color.BLUE)
+
+        color_order.append(None)
+        duct_seek_routine_new(toph, color_order[index + 1])
+
 
 
 def test_katara():
