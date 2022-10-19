@@ -192,6 +192,7 @@ def water_main(katara: Robot):
     delivery = None
 
     # Espera confirmação da Toph pra começar a seguir o gasoduto
+    katara.brick.speaker.beep(100, 200)
     logic_mbox.wait()
 
     while True:
@@ -291,6 +292,18 @@ def test_katara():
         debug=True,
         turn_correction=const.KATARA_TURN_CORRECTION,
     )
+
+    while True:
+        katara.forward_while_same_reflection()
+        katara.pid_walk(8, -50)
+        katara.pid_turn(90)
+        katara.forward_while_same_reflection()
+        katara.pid_walk(8, -50)
+        katara.pid_turn(135)
+        katara.forward_while_same_reflection()
+        katara.pid_walk(8, -50)
+        katara.pid_turn(180)
+    return None
 
     katara.motor_claw.run_target(300, const.CLAW_UP)
 
@@ -406,4 +419,4 @@ def color_guessing():
 
 
 if __name__ == "__main__":
-    main()
+    test_katara()
