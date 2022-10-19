@@ -338,7 +338,7 @@ class Robot:
             - 1: usa o valor dado como ângulo ao redor do eixo do robô
             - 2: usa o valor dado como ângulo no eixo das rodas
         """
-        self.ev3_print(self.pid_turn.__name__)
+        # self.ev3_print(self.pid_turn.__name__)
 
         if mode == 1:
             motor_degrees = self.robot_axis_to_motor_degrees(angle)
@@ -351,8 +351,8 @@ class Robot:
         target_angle_r = initial_angle_r - motor_degrees
         target_angle_l = initial_angle_l + motor_degrees
 
-        self.ev3_print("INICIAL:", initial_angle_l, initial_angle_r)
-        self.ev3_print("TARGET:", target_angle_l, target_angle_r)
+        # self.ev3_print("INICIAL:", initial_angle_l, initial_angle_r)
+        # self.ev3_print("TARGET:", target_angle_l, target_angle_r)
 
         left_error = target_angle_l - self.motor_l.angle()
         right_error = target_angle_r - self.motor_r.angle()
@@ -391,15 +391,15 @@ class Robot:
             right_pid_speed = (
                 pid.kp * right_error + pid.ki * right_error_i + pid.kd * right_error_d
             )
-            self.ev3_print(
-                self.motor_l.angle(),
-                self.motor_r.angle(),
-                "|",
-                left_error,
-                left_error_i,
-                left_error_d,
-                left_pid_speed,
-            )
+            # self.ev3_print(
+            #     self.motor_l.angle(),
+            #     self.motor_r.angle(),
+            #     "|",
+            #     left_error,
+            #     left_error_i,
+            #     left_error_d,
+            #     left_pid_speed,
+            # )
 
             # Limitante de velocidade
             left_speed_sign = -1 if left_pid_speed < 0 else 1
@@ -411,7 +411,7 @@ class Robot:
             self.motor_r.dc(right_pid_speed)
 
         self.off_motors()
-        self.ev3_print(n, "| END:", self.motor_l.angle(), self.motor_r.angle())
+        # self.ev3_print(n, "| END:", self.motor_l.angle(), self.motor_r.angle())
 
     def simple_walk(self, cm, speed=50, speed_l=None, speed_r=None):
         """Movimentação simples"""
@@ -685,10 +685,10 @@ class Robot:
                 prev_elapsed_time = elapsed_time
                 elapsed_time = self.stopwatch.time()
                 time = prev_elapsed_time - elapsed_time
-                if time in range(0,50):
+                if time in range(0, 50):
                     correction = 0
                     print("1")
-                elif time in range(50,150):
+                elif time in range(50, 150):
                     correction = 15
                     print("2")
                 elif time > 150:
@@ -740,32 +740,38 @@ class Robot:
 
             prev_color_read = color_read
             color_read = self.accurate_color(sensor.rgb())
- 
+
             ultra_read = self.infra_side.distance()
             reads.append(ultra_read)
-            if(len(reads)>=10):
-                reads_mean = sum(reads[-10:])/10
+            if len(reads) >= 10:
+                reads_mean = sum(reads[-10:]) / 10
                 reads.clear()
 
-            if(reads_mean < 50):
-                self.pid_walk(cm=1,vel=-40)
-                self.pid_line_grabber(100,1000,self.color_l)
-                self.walk_to_hole(mode=3, color_check_color=break_color, color_check_sensor=self.color_l)
+            if reads_mean < 50:
+                self.pid_walk(cm=1, vel=-40)
+                self.pid_line_grabber(100, 1000, self.color_l)
+                self.walk_to_hole(
+                    mode=3,
+                    color_check_color=break_color,
+                    color_check_sensor=self.color_l,
+                )
                 self.brick.speaker.beep()
-                duct_length = self.duct_measurement(color_check_color=break_color, color_check_sensor=self.color_l)
+                duct_length = self.duct_measurement(
+                    color_check_color=break_color, color_check_sensor=self.color_l
+                )
                 self.brick.speaker.beep()
                 results.append(duct_length)
 
             prev_motor_mean = motor_mean
-            motor_mean = (self.motor_l.angle() + self.motor_r.angle())/2
+            motor_mean = (self.motor_l.angle() + self.motor_r.angle()) / 2
 
             if prev_color_read != color_read:
                 prev_elapsed_time = elapsed_time
                 elapsed_time = self.stopwatch.time()
                 time = prev_elapsed_time - elapsed_time
-                if time in range(0,50):
+                if time in range(0, 50):
                     correction = 20
-                elif time in range(50,150):
+                elif time in range(50, 150):
                     correction = 10
                 elif time > 150:
                     correction = 5
@@ -773,10 +779,8 @@ class Robot:
             self.motor_r.dc(vel + ((sign * (vel * 0.3)) + correction))
             self.motor_l.dc(vel - ((sign * (vel * 0.3)) - correction))
 
-
             if color_read == break_color:
                 return
-            
 
     def min_aligner(
         self, min_function, speed: int = 40, max_angle=90, acceptable_range=0
@@ -848,14 +852,16 @@ class Robot:
                 pid.kp * motor_error + pid.ki * motor_error_i + pid.kd * motor_error_d
             )
 
-            self.ev3_print(
-                motor_error,
-                motor_error_i,
-                motor_error_d,
-                "| COL_REFL:",
-                self.color_l.reflection(),
-                self.color_r.reflection(),
-            )
+            self.ev3_print("IR:", self.infra_side.distance())
+
+            # self.ev3_print(
+            #     motor_error,
+            #     motor_error_i,
+            #     motor_error_d,
+            #     "| COL_REFL:",
+            #     self.color_l.reflection(),
+            #     self.color_r.reflection(),
+            # )
 
             # Condições de parada
             if abs(motor_error) > 100 and abs(motor_error_d) > 60:
@@ -884,11 +890,11 @@ class Robot:
 
         self.off_motors()
         final_diff = self.motor_r.angle() - self.motor_l.angle()
-        self.ev3_print("final_diff:", final_diff)
+        # self.ev3_print("final_diff:", final_diff)
 
         self.move_both_to_target(
-            target_r=self.motor_r.angle() - motor_diff / 2,
-            target_l=self.motor_l.angle() + motor_diff / 2,
+            target_r=self.motor_r.angle() - final_diff / 2,
+            target_l=self.motor_l.angle() + final_diff / 2,
         )
 
         return return_value
@@ -900,6 +906,7 @@ class Robot:
         pid=PIDValues(kp=1, ki=0.0001, kd=0.01),
         turning=0,
         max_cm=None,
+        safe_max_read=None,
     ):
         """
         Se move até ler determinada distância com o sensor dado.
@@ -910,7 +917,7 @@ class Robot:
         - single_motor é um motor opcional caso queira executar o movimento apenas com o motor
         desejado. Se não for passado, os dois motores básicos são usados por padrão.
         """
-        self.ev3_print(self.move_to_distance.__name__, distance)
+        # self.ev3_print(self.move_to_distance.__name__, distance)
 
         if max_cm is not None:
             max_motor_degrees = self.cm_to_motor_degrees(max_cm)
@@ -923,30 +930,32 @@ class Robot:
         diff = sensor.distance() - distance
         diff_i = 0
         prev_diff = diff
-        while abs(diff) >= 1:
+        while abs(diff) >= 1 and (
+            safe_max_read is None or abs(sensor.distance()) < safe_max_read
+        ):
             diff = sensor.distance() - distance
             diff_i += diff
             diff_d = diff - prev_diff
 
             pid_speed = diff * pid.kp + diff_i * pid.ki + diff_d * pid.kd
 
-            self.ev3_print(diff, diff_i, diff_d, pid_speed)
+            # self.ev3_print(diff, diff_i, diff_d, pid_speed)
             if abs(pid_speed) < 10:
                 break
 
             self.motor_l.dc(pid_speed * (1 + turning))
             self.motor_r.dc(pid_speed * (1 - turning))
 
-            self.ev3_print(
-                abs(initial_degrees_l - self.motor_l.angle()),
-                abs(initial_degrees_r - self.motor_r.angle()),
-            )
+            # self.ev3_print(
+            #     abs(initial_degrees_l - self.motor_l.angle()),
+            #     abs(initial_degrees_r - self.motor_r.angle()),
+            # )
             if max_cm is not None and (
                 abs(initial_degrees_l - self.motor_l.angle()) > max_motor_degrees
                 or abs(initial_degrees_r - self.motor_r.angle()) > max_motor_degrees
             ):
                 break
-        self.ev3_print(sensor.distance())
+        # self.ev3_print(sensor.distance())
         self.off_motors()
 
     def hole_measurement(
@@ -1033,7 +1042,7 @@ class Robot:
             )
 
             pid_correction = p_share + i_share + d_share
-            
+
             self.motor_r.dc(vel - pid_correction)
             self.motor_l.dc(vel + pid_correction)
 
@@ -1044,7 +1053,7 @@ class Robot:
             const.WHEEL_DIAMETER * math.pi
         )  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
         degrees = (self.motor_l.angle() + self.motor_r.angle()) / 2
-        #erro medio de medida -> 80 graus
+        # erro medio de medida -> 80 graus
         print(degrees)
         return (degrees / 360) * WHEEL_LENGTH
 
@@ -1145,7 +1154,7 @@ class Robot:
                 pid_correction = p_share + i_share + d_share
 
                 bias = 1
-                if(self.accurate_color(color_check_sensor.rgb())==Color.BLACK):
+                if self.accurate_color(color_check_sensor.rgb()) == Color.BLACK:
                     bias = 2
                     self.motor_r.dc(bias * vel)
                     self.motor_l.dc(vel)

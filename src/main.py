@@ -205,6 +205,7 @@ def water_main(katara: Robot):
         back_to_water_routine(katara)
         delivery = measured_value
 
+
 def test_toph():
     toph = Robot(
         wheel_diameter=const.WHEEL_DIAMETER,
@@ -247,7 +248,7 @@ def test_katara():
     # duct_get(katara)
     # back_to_water_routine(katara)
 
-    delivery = 10
+    delivery = 15
 
     while True:
         measured_value = gas_duct_routine(katara, delivery=delivery)
@@ -354,4 +355,4 @@ def color_guessing():
 
 
 if __name__ == "__main__":
-    test_toph()
+    test_katara()
