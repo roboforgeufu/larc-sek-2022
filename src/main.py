@@ -180,7 +180,7 @@ def water_main(katara: Robot):
     # Espera confirmação da Toph
     logic_mbox.wait()
 
-    katara.motor_claw.run_target(300, 300)
+    katara.motor_claw.run_target(300, const.CLAW_UP)
     water_position_routine(katara)
 
     # Avisa toph que está fora da meeting area
@@ -213,7 +213,7 @@ def test_katara():
         turn_correction=const.KATARA_TURN_CORRECTION,
     )
 
-    katara.motor_claw.run_target(300, 300)
+    katara.motor_claw.run_target(300, const.CLAW_UP)
 
     water_position_routine(katara)
     delivery = None

@@ -141,15 +141,16 @@ def land_position_routine(robot: Robot):
 
 
 def back_from_water_routine(robot: Robot):
-
     robot.pid_turn(-90)
     robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
-    robot.pid_walk(8, -80)
+    robot.pid_walk(1, -80)
     robot.pid_turn(-90)
     ramp_follower(robot)
     robot.pid_walk(10, -80)
 
-    robot.pid_turn(90)
+    robot.one_wheel_turn(robot.motor_r, -90, 80)
+    robot.pid_walk(3, -80)
+
     robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
 
     robot.pid_walk(30, vel=80)
@@ -167,17 +168,19 @@ def back_from_water_routine(robot: Robot):
 
 def back_to_water_routine(robot: Robot):
     """O robô está na rampa, desce para a água e vira para a direita."""
-    robot.pid_walk(8, vel=-30)
-    robot.pid_turn(180)
-    robot.simple_walk(-60, speed_l=30, speed_r=30)
-    robot.pid_turn(-90)
+    robot.simple_walk(50, speed_l=30, speed_r=30)
+    robot.simple_turn(90)
 
     ramp_follower(robot)
+    robot.pid_walk(12, -80)
 
-    robot.pid_walk(8, -80)
+    robot.one_wheel_turn(robot.motor_r, -90, 80)
+    robot.pid_walk(3, -80)
+
+    robot.forward_while_same_reflection(reflection_diff=2)
+    robot.pid_walk(12, vel=-30)
+
     robot.pid_turn(-90)
-    robot.pid_walk(8, 80)
-    robot.pid_turn(90)
 
 
 def ramp_follower(robot: Robot):

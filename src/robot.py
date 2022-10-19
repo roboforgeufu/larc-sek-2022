@@ -138,7 +138,7 @@ class Robot:
         avoid_obstacles=False,
         pid: PIDValues = PIDValues(
             kp=1,
-            ki=0.1,
+            ki=0.001,
             kd=1,
         ),
     ):
@@ -257,6 +257,16 @@ class Robot:
 
         self.off_motors()
         return reads
+
+    def one_wheel_turn(self, motor: Motor, angle: int, speed: int):
+        # Curva com um motor
+        dir_sign = 1 if angle > 0 else -1
+        initial_angle = motor.angle()
+        while abs(motor.angle() - initial_angle) < self.robot_axis_to_motor_degrees(
+            abs(angle) * 2
+        ):
+            motor.dc(speed * dir_sign)
+        self.off_motors()
 
     def one_wheel_turn_till_color(self, motor: Motor, sensor_color, target_color):
         motor.reset_angle(0)

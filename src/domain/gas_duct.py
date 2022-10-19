@@ -85,11 +85,11 @@ def check_hole(robot: Robot):
     True caso seja um pedaço faltante do gasoduto,
     False caso seja um "final" de gasoduto (curva).
     """
-    robot.motor_sensor.run_target(300, 550)
+    robot.motor_sensor.run_target(const.INFRA_SPEED, const.INFRA_DOWN)
     hole_seen = robot.infra_side.distance() <= const.WALL_SEEN_DIST
     if hole_seen:
         robot.min_aligner(robot.infra_side.distance)
-    robot.motor_sensor.run_target(300, 0)
+    robot.motor_sensor.run_target(const.INFRA_SPEED, const.INFRA_UP)
     return hole_seen
 
 
@@ -126,9 +126,9 @@ def armagedon_the_end_of_times(robot: Robot):
 
 def duct_deliver(robot: Robot, measured_value: int):
     # Abaixa o sensor enquanto faz ré
-    robot.motor_sensor.run_target(300, 600, wait=False)
+    robot.motor_sensor.run_target(const.INFRA_SPEED, const.INFRA_DOWN, wait=False)
     robot.simple_walk((-(measured_value + 2) / 2) - 1.5, speed=30)
-    robot.motor_sensor.run_target(300, 600)
+    robot.motor_sensor.run_target(const.INFRA_SPEED, const.INFRA_DOWN)
 
     # Alinha com o sensor do lado
     robot.min_aligner(robot.infra_side.distance)
@@ -137,23 +137,23 @@ def duct_deliver(robot: Robot, measured_value: int):
     robot.min_aligner(robot.ultra_front.distance, acceptable_range=30)
 
     # Entrega
-    robot.move_to_distance(45, sensor=robot.ultra_front)
+    robot.move_to_distance(40, sensor=robot.ultra_front)
 
     robot.motor_claw.run_target(100, 110)
 
-    robot.pid_walk(1, 30)
+    robot.pid_walk(1, 25)
     robot.motor_claw.run_target(100, 95)
 
     # Afasta levantando a garra e o sensor
     robot.pid_walk(5, -80)
-    robot.motor_claw.run_target(300, 300, wait=False)
-    robot.motor_sensor.run_target(300, 0, wait=False)
+    robot.motor_claw.run_target(300, const.CLAW_UP, wait=False)
+    robot.motor_sensor.run_target(const.INFRA_SPEED, const.INFRA_UP, wait=False)
     robot.move_to_distance(const.WALL_FOLLOWER_FRONT_DIST, sensor=robot.ultra_front)
 
     # Curva final (e wait da garra e sensor)
     robot.pid_turn(-90)
-    robot.motor_sensor.run_target(300, 0, wait=True)
-    robot.motor_claw.run_target(300, 300, wait=True)
+    robot.motor_sensor.run_target(const.INFRA_SPEED, const.INFRA_UP, wait=False)
+    robot.motor_claw.run_target(300, const.CLAW_UP)
 
     robot.simple_walk(((measured_value + 2) / 2) + 4, speed=30)
 
@@ -163,11 +163,11 @@ def duct_get(robot: Robot):
     # recolhe o duto
     robot.move_to_distance(120, robot.ultra_front)
 
-    robot.motor_claw.run_target(300, 0)
+    robot.motor_claw.run_target(300, const.CLAW_DOWN)
 
     robot.pid_walk(cm=14, vel=30)
     robot.off_motors()
-    robot.motor_claw.run_target(300, 300)
+    robot.motor_claw.run_target(300, const.CLAW_UP)
     robot.pid_turn(180)
     robot.forward_while_same_reflection()
     robot.pid_walk(cm=2, vel=-30)
