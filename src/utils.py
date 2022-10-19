@@ -68,13 +68,11 @@ def between(value, min_value, max_value):
     )
 
 
-
-
-
 def wait_button_pressed(ev3: EV3Brick, button: Button = Button.CENTER):
     """
     Trava execução até que o botão especificado seja pressionado.
     """
+    ev3.speaker.beep(800)
     while True:
         if button in ev3.buttons.pressed():
             break

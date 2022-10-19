@@ -22,7 +22,24 @@ def gas_duct_routine(robot: Robot, delivery=None):
         wall_flw_value = robot.pid_wall_follower(front_sensor=robot.ultra_front)
         if wall_flw_value == 1:
             # Curva pra dentro ou buraco
-            robot.simple_walk(1, 30)
+            initial_motor_l = robot.motor_l.angle()
+            initial_motor_r = robot.motor_r.angle()
+            while robot.infra_side.distance() < const.WALL_SEEN_DIST and (
+                abs(robot.motor_l.angle() - initial_motor_l)
+                < robot.cm_to_motor_degrees(5)
+                and abs(robot.motor_r.angle() - initial_motor_r)
+                < robot.cm_to_motor_degrees(5)
+            ):
+                robot.brick.light.on(Color.ORANGE)
+                robot.motor_l.dc(30)
+                robot.motor_r.dc(30)
+            robot.off_motors()
+            robot.brick.light.off()
+
+            if robot.infra_side.distance() < const.WALL_SEEN_DIST:
+                robot.brick.speaker.beep(350)
+                continue
+
             if check_hole(robot):
                 # buraco
                 robot.brick.speaker.beep()
@@ -40,6 +57,8 @@ def gas_duct_routine(robot: Robot, delivery=None):
                             delivery = None
                     else:
                         return measured_value
+                else:
+                    continue
             else:
                 # curva pra dentro
                 duct_follower_turn_routine(robot)
@@ -92,16 +111,22 @@ def check_hole(robot: Robot):
 
 def duct_measure_hole(robot: Robot):
     robot.ev3_print(duct_measure_hole.__name__)
+
+    robot.ev3_print("dbg: 1")
     if robot.infra_side.distance() > const.WALL_SEEN_DIST:
         # se está vendo o buraco, ré até deixar de ver
         robot.walk_to_hole(mode=1)
+        robot.ev3_print("dbg: 2")
         robot.pid_walk(cm=5, vel=-60)
 
-    if robot.infra_side.distance() < const.WALL_SEEN_DIST:
-        # se não está vendo o buraco, vai pra frente até ver
-        robot.walk_to_hole(mode=2)
+        robot.ev3_print("dbg: 3")
+        if robot.infra_side.distance() < const.WALL_SEEN_DIST:
+            # se não está vendo o buraco, vai pra frente até ver, ou no máximo 7 cm (?)
+            robot.walk_to_hole(mode=2)
+        robot.ev3_print("dbg: 4")
 
     measurement = robot.hole_measurement()
+    robot.ev3_print("dbg: 5")
 
     robot.ev3_print("MEASURE:", measurement)
 

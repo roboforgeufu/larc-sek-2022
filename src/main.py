@@ -238,7 +238,6 @@ def test_toph():
         debug=True,
     )
 
-    
     toph.pid_walk(cm=7, vel=-60)
     toph.certify_line_alignment_routine(
         target_color=Color.BLACK,
@@ -333,7 +332,8 @@ def test_katara():
         measured_value = gas_duct_routine(katara, delivery=delivery)
         back_from_water_routine(katara)
         duct_get(katara)
-        back_to_water_routine(katara)
+        back_to_water_routine1(katara)
+        back_to_water_routine2(katara)
         delivery = measured_value
 
 
