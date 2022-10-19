@@ -9,7 +9,7 @@ from utils import wait_button_pressed
 
 
 def gas_duct_routine(robot: Robot, delivery=None):
-    robot.forward_while_same_reflection(reflection_diff=2)
+    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
     robot.pid_walk(10, -40)
     robot.pid_turn(-90)
 
@@ -22,14 +22,10 @@ def gas_duct_routine(robot: Robot, delivery=None):
         wall_flw_value = robot.pid_wall_follower(front_sensor=robot.ultra_front)
         if wall_flw_value == 1:
             # Curva pra dentro ou buraco
-            while robot.infra_side.distance() < const.WALL_SEEN_DIST:
-                robot.motor_l.dc(30)
-                robot.motor_r.dc(30)
-            robot.off_motors()
-
             robot.simple_walk(1, 30)
             if check_hole(robot):
                 # buraco
+                robot.brick.speaker.beep()
                 measured_value = duct_measure_hole(robot)
                 # ###
                 robot.brick.speaker.beep()
@@ -96,10 +92,14 @@ def check_hole(robot: Robot):
 
 def duct_measure_hole(robot: Robot):
     robot.ev3_print(duct_measure_hole.__name__)
-    robot.walk_to_hole(mode=1)
+    if robot.infra_side.distance() > const.WALL_SEEN_DIST:
+        # se está vendo o buraco, ré até deixar de ver
+        robot.walk_to_hole(mode=1)
+        robot.pid_walk(cm=5, vel=-60)
 
-    robot.pid_walk(cm=5, vel=-60)
-    robot.walk_to_hole(mode=2)
+    if robot.infra_side.distance() < const.WALL_SEEN_DIST:
+        # se não está vendo o buraco, vai pra frente até ver
+        robot.walk_to_hole(mode=2)
 
     measurement = robot.hole_measurement()
 

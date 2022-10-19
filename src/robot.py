@@ -118,6 +118,10 @@ class Robot:
         """Desliga motores de locomoção."""
         self.motor_l.dc(0)
         self.motor_r.dc(0)
+        self.motor_l.hold()
+        self.motor_r.hold()
+        self.motor_l.dc(0)
+        self.motor_r.dc(0)
 
     def ev3_print(self, *args, clear=False, **kwargs):
         """
@@ -421,7 +425,7 @@ class Robot:
             left_wheel_angle_distance = self.motor_l.angle() - initial_angle_l
             right_wheel_angle_distance = self.motor_r.angle() - initial_angle_r
 
-            self.ev3_print("C:", self.motor_l.speed(), self.motor_r.speed())
+            # self.ev3_print("C:", self.motor_l.speed(), self.motor_r.speed())
             if (
                 abs(self.motor_l.speed()) < const.PID_TURN_MIN_SPEED
                 and abs(self.motor_r.speed()) < const.PID_TURN_MIN_SPEED
@@ -703,9 +707,9 @@ class Robot:
             color_reads.append(color_read)
             left_multiplier = 0.25
             right_multiplier = 0.25
-            if(len(color_reads)==num_reads):
-                black_count_perc = (color_reads.count(Color.BLACK))/num_reads
-                white_count_perc = (color_reads.count(Color.WHITE))/num_reads
+            if len(color_reads) == num_reads:
+                black_count_perc = (color_reads.count(Color.BLACK)) / num_reads
+                white_count_perc = (color_reads.count(Color.WHITE)) / num_reads
                 wrong_read_perc = black_count_perc + white_count_perc
                 color_count_perc = 1 - wrong_read_perc
                 color_reads.clear()
@@ -843,7 +847,7 @@ class Robot:
 
         self.move_both_to_target(
             target_r=self.motor_r.angle() - final_diff / 2,
-            target_l=self.motor_l.angle() + final_diff / 2,
+            target_l=self.motor_l.angle(),
         )
 
         return return_value
@@ -1019,8 +1023,8 @@ class Robot:
         self.motor_l.reset_angle(0)
         self.motor_r.reset_angle(0)
         while self.get_average_reading(self.infra_side.distance) < 50 and (
-                color_check_color is None
-                or self.accurate_color(color_check_sensor.rgb()) != color_check_color
+            color_check_color is None
+            or self.accurate_color(color_check_sensor.rgb()) != color_check_color
         ):
             sign = 1 if color_check_sensor == self.color_l else -1
             if (
@@ -1034,13 +1038,13 @@ class Robot:
             color_reads.append(color_read)
             left_multiplier = 0.33
             right_multiplier = 0.33
-            if(len(color_reads)==num_reads):
-                black_count_perc = (color_reads.count(Color.BLACK))/num_reads
-                white_count_perc = (color_reads.count(Color.WHITE))/num_reads
+            if len(color_reads) == num_reads:
+                black_count_perc = (color_reads.count(Color.BLACK)) / num_reads
+                white_count_perc = (color_reads.count(Color.WHITE)) / num_reads
                 wrong_read_perc = black_count_perc + white_count_perc
                 color_count_perc = 1 - wrong_read_perc
                 color_reads.clear()
-                    
+
             self.motor_r.dc(vel + (vel * wrong_read_perc * right_multiplier * sign))
             self.motor_l.dc(vel - (vel * color_count_perc * left_multiplier * sign))
 

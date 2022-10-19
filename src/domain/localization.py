@@ -115,17 +115,19 @@ def land_position_routine(robot: Robot):
 
             robot.pid_accelerated_walk(-500, 2)
             robot.pid_turn(150)
-            robot.turn_till_color(direction="right",sensor_color=robot.color_l,target_color=Color.BLACK)
+            robot.turn_till_color(
+                direction="right", sensor_color=robot.color_l, target_color=Color.BLACK
+            )
             #####
             robot.pid_line_grabber(100, 3000, robot.color_l)
             # robot.turn_till_color_routine(robot.motor_r, robot.color_l, Color.BLACK)
-            color_order = robot.line_follower_color_id(
-                robot.color_l, array=color_order
-            )
+            color_order = robot.line_follower_color_id(robot.color_l, array=color_order)
             ev3_print(color_order, ev3=robot.brick)
             robot.pid_accelerated_walk(-500, 2)
             robot.pid_turn(-150)
-            robot.turn_till_color(direction="left",sensor_color=robot.color_r,target_color=Color.BLACK)
+            robot.turn_till_color(
+                direction="left", sensor_color=robot.color_r, target_color=Color.BLACK
+            )
 
             #####
             robot.pid_line_grabber(100, 3000, robot.color_r)
@@ -169,13 +171,16 @@ def back_from_water_routine(robot: Robot):
     robot.pid_turn(90)
 
 
-def back_to_water_routine(robot: Robot):
+def back_to_water_routine1(robot: Robot):
     """O robô está na rampa, desce para a água e vira para a direita."""
     robot.pid_walk(8, vel=-30)
     robot.pid_turn(180)
     robot.simple_walk(-60, speed_l=30, speed_r=30)
-    robot.simple_turn(-90)
 
+
+def back_to_water_routine2(robot: Robot):
+    """2"""
+    robot.simple_turn(-90)
     ramp_follower(robot)
     robot.pid_walk(12, -40)
 

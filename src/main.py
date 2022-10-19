@@ -30,7 +30,12 @@ from pybricks.parameters import Color, Port
 from pybricks.tools import DataLog, wait
 
 import constants as const
-from domain.collect import align_duct_center, duct_ends, duct_seek_routine_new, return_to_idle_position
+from domain.collect import (
+    align_duct_center,
+    duct_ends,
+    duct_seek_routine_new,
+    return_to_idle_position,
+)
 from domain.gas_duct import (
     armagedon_the_end_of_times,
     check_hole,
@@ -42,7 +47,8 @@ from domain.gas_duct import (
 )
 from domain.localization import (
     back_from_water_routine,
-    back_to_water_routine,
+    back_to_water_routine1,
+    back_to_water_routine2,
     check_land_position_by_color,
     land_position_routine,
     water_position_routine,
@@ -165,7 +171,6 @@ def land_main(toph: Robot):
         duct_seek_routine_new(toph, color_order[index + 1])
         numeric_mbox.send(0)
         return_to_idle_position(toph)
-        
 
 
 def water_main(katara: Robot):
@@ -191,10 +196,10 @@ def water_main(katara: Robot):
     katara.motor_claw.run_target(300, const.CLAW_UP)
     water_position_routine(katara)
 
+    back_to_water_routine1(katara)
     # Avisa toph que está fora da meeting area
     logic_mbox.send(True)
-
-    back_to_water_routine(katara)
+    back_to_water_routine2(katara)
 
     delivery = None
 
@@ -211,7 +216,8 @@ def water_main(katara: Robot):
 
         back_from_water_routine(katara)
         duct_get(katara)
-        back_to_water_routine(katara)
+        back_to_water_routine1(katara)
+        back_to_water_routine2(katara)
         delivery = measured_value
 
 
@@ -305,26 +311,13 @@ def test_katara():
         turn_correction=const.KATARA_TURN_CORRECTION,
     )
 
-    while True:
-        katara.forward_while_same_reflection()
-        katara.pid_walk(8, -50)
-        katara.pid_turn(90)
-        katara.forward_while_same_reflection()
-        katara.pid_walk(8, -50)
-        katara.pid_turn(135)
-        katara.forward_while_same_reflection()
-        katara.pid_walk(8, -50)
-        katara.pid_turn(180)
-    return None
-
     katara.motor_claw.run_target(300, const.CLAW_UP)
+    # wait_button_pressed(katara.brick)
 
     # water_position_routine(katara)
     # back_to_water_routine(katara)
-    # duct_get(katara)
-    # back_to_water_routine(katara)
 
-    delivery = 15
+    delivery = None
 
     while True:
         measured_value = gas_duct_routine(katara, delivery=delivery)
