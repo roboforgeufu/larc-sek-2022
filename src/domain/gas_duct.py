@@ -34,7 +34,7 @@ def gas_duct_routine(robot: Robot, delivery=None):
                 # ###
                 robot.brick.speaker.beep()
                 robot.ev3_print(measured_value)
-                wait_button_pressed(robot.brick)
+                # wait_button_pressed(robot.brick)
                 # ###
 
                 if measured_value > 0:
