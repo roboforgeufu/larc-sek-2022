@@ -37,12 +37,13 @@ def gas_duct_routine(robot: Robot, delivery=None):
                 wait_button_pressed(robot.brick)
                 # ###
 
-                if delivery is not None and measured_value > 0:
-                    if delivery == measured_value:
-                        duct_deliver(robot, measured_value)
-                        delivery = None
-                else:
-                    return measured_value
+                if measured_value > 0:
+                    if delivery is not None:
+                        if delivery == measured_value:
+                            duct_deliver(robot, measured_value)
+                            delivery = None
+                    else:
+                        return measured_value
             else:
                 # curva pra dentro
                 duct_follower_turn_routine(robot)
