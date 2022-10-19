@@ -221,7 +221,7 @@ def duct_seek_routine_new(robot: Robot, color):
     robot.pid_walk(cm=7, vel=20)
     robot.off_motors()
     robot.motor_claw.reset_angle(0)
-    robot.motor_claw.run_target(300, 300)
+    robot.motor_claw.run_target(300, const.CLAW_UP)
 
     # alinha com a linha preta e o buraco para deixar o duto numa posição padrão
     robot.forward_while_same_reflection(speed_r=-60, speed_l=-60)
