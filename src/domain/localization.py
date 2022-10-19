@@ -182,7 +182,7 @@ def back_to_water_routine(robot: Robot):
     robot.one_wheel_turn(robot.motor_r, -90, 40)
     robot.pid_walk(3, -40)
 
-    robot.forward_while_same_reflection(reflection_diff=2)
+    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
     robot.pid_walk(12, vel=-30)
 
     robot.pid_turn(-90)

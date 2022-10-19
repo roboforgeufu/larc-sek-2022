@@ -197,6 +197,7 @@ def water_main(katara: Robot):
     delivery = None
 
     # Espera confirmação da Toph pra começar a seguir o gasoduto
+    katara.brick.speaker.beep(100, 200)
     logic_mbox.wait()
 
     while True:
@@ -237,14 +238,12 @@ def test_toph():
     # toph.line_follower_color_id(toph.color_l)
     # wait_button_pressed(toph.brick)
 
-
     # toph.pid_turn(45)
     # wait_button_pressed(toph.brick)
     # toph.pid_turn(90)
     # wait_button_pressed(toph.brick)
     # toph.pid_turn(-180)
     # wait_button_pressed(toph.brick)
-
 
     # color_order = []
     # color_order = land_position_routine(toph)
@@ -269,7 +268,7 @@ def test_toph():
 
     # # dutos subsequentes (comunicação bluetooth)
 
-    color_order = [Color.YELLOW,Color.RED,Color.BLUE]
+    color_order = [Color.YELLOW, Color.RED, Color.BLUE]
     num = 10
     toph.pid_line_grabber(100, 3000, toph.color_l)
 
@@ -288,7 +287,6 @@ def test_toph():
         duct_seek_routine_new(toph, color_order[index + 1])
 
 
-
 def test_katara():
     katara = Robot(
         wheel_diameter=const.WHEEL_DIAMETER,
@@ -304,6 +302,18 @@ def test_katara():
         debug=True,
         turn_correction=const.KATARA_TURN_CORRECTION,
     )
+
+    while True:
+        katara.forward_while_same_reflection()
+        katara.pid_walk(8, -50)
+        katara.pid_turn(90)
+        katara.forward_while_same_reflection()
+        katara.pid_walk(8, -50)
+        katara.pid_turn(135)
+        katara.forward_while_same_reflection()
+        katara.pid_walk(8, -50)
+        katara.pid_turn(180)
+    return None
 
     katara.motor_claw.run_target(300, const.CLAW_UP)
 
@@ -419,4 +429,4 @@ def color_guessing():
 
 
 if __name__ == "__main__":
-    main()
+    test_katara()

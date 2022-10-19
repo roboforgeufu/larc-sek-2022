@@ -277,7 +277,7 @@ class Robot:
         return motor.angle()
 
     def turn_till_color(self, direction, sensor_color, target_color):
-        sign = 1 if direction == "right" else -1        
+        sign = 1 if direction == "right" else -1
         vel = 50
         while self.accurate_color(sensor_color.rgb()) != target_color:
             self.motor_l.dc(sign * vel)
@@ -418,6 +418,17 @@ class Robot:
             self.motor_l.dc(left_pid_speed)
             self.motor_r.dc(right_pid_speed)
 
+            left_wheel_angle_distance = self.motor_l.angle() - initial_angle_l
+            right_wheel_angle_distance = self.motor_r.angle() - initial_angle_r
+
+            self.ev3_print("C:", self.motor_l.speed(), self.motor_r.speed())
+            if (
+                abs(self.motor_l.speed()) < const.PID_TURN_MIN_SPEED
+                and abs(self.motor_r.speed()) < const.PID_TURN_MIN_SPEED
+                and abs(left_wheel_angle_distance) > const.MIN_DEGREES_CURVE_THRESHOLD
+                and abs(right_wheel_angle_distance) > const.MIN_DEGREES_CURVE_THRESHOLD
+            ):
+                break
         self.off_motors()
         # self.ev3_print(n, "| END:", self.motor_l.angle(), self.motor_r.angle())
 
@@ -698,7 +709,6 @@ class Robot:
                 wrong_read_perc = black_count_perc + white_count_perc
                 color_count_perc = 1 - wrong_read_perc
                 color_reads.clear()
-                    
 
             self.motor_r.dc(vel + (vel * wrong_read_perc * right_multiplier * sign))
             self.motor_l.dc(vel - (vel * color_count_perc * left_multiplier * sign))
@@ -720,7 +730,6 @@ class Robot:
         self.motor_l.hold()
 
         return array
-
 
     def min_aligner(
         self, min_function, speed: int = 40, max_angle=90, acceptable_range=0
@@ -1227,14 +1236,14 @@ class Robot:
         else:
             return Color.BLACK
 
-    def walk_till_duct(self,vel=50,color_check_color=None,color_check_sensor=None):
+    def walk_till_duct(self, vel=50, color_check_color=None, color_check_sensor=None):
         color_reads = []
         num_reads = 10
         wrong_read_perc = 0.5
         color_count_perc = 0.5
         while self.get_average_reading(self.infra_side.distance) > 50 and (
-                color_check_color is None
-                or self.accurate_color(color_check_sensor.rgb()) != color_check_color
+            color_check_color is None
+            or self.accurate_color(color_check_sensor.rgb()) != color_check_color
         ):
             sign = 1 if color_check_sensor == self.color_l else -1
             if (
@@ -1248,19 +1257,19 @@ class Robot:
             color_reads.append(color_read)
             left_multiplier = 0.33
             right_multiplier = 0.33
-            if(len(color_reads)==num_reads):
-                black_count_perc = (color_reads.count(Color.BLACK))/num_reads
-                white_count_perc = (color_reads.count(Color.WHITE))/num_reads
+            if len(color_reads) == num_reads:
+                black_count_perc = (color_reads.count(Color.BLACK)) / num_reads
+                white_count_perc = (color_reads.count(Color.WHITE)) / num_reads
                 wrong_read_perc = black_count_perc + white_count_perc
                 color_count_perc = 1 - wrong_read_perc
                 color_reads.clear()
-                    
+
             self.motor_r.dc(vel + (vel * wrong_read_perc * right_multiplier * sign))
             self.motor_l.dc(vel - (vel * color_count_perc * left_multiplier * sign))
 
-    def get_average_reading(self, sensor_func, num_reads = 100):
+    def get_average_reading(self, sensor_func, num_reads=100):
         measures = []
         for i in range(num_reads):
             measures.append(sensor_func())
-        mean = sum(measures)/len(measures)
+        mean = sum(measures) / len(measures)
         return mean
