@@ -409,4 +409,4 @@ def color_guessing():
 
 
 if __name__ == "__main__":
-    test_katara()
+    main()
