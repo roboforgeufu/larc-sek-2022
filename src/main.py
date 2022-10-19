@@ -227,14 +227,12 @@ def test_toph():
     # toph.line_follower_color_id(toph.color_l)
     # wait_button_pressed(toph.brick)
 
-
     # toph.pid_turn(45)
     # wait_button_pressed(toph.brick)
     # toph.pid_turn(90)
     # wait_button_pressed(toph.brick)
     # toph.pid_turn(-180)
     # wait_button_pressed(toph.brick)
-
 
     # color_order = []
     # color_order = land_position_routine(toph)
@@ -259,7 +257,7 @@ def test_toph():
 
     # # dutos subsequentes (comunicação bluetooth)
 
-    color_order = [Color.YELLOW,Color.RED,Color.BLUE]
+    color_order = [Color.YELLOW, Color.RED, Color.BLUE]
     num = 10
     toph.pid_line_grabber(100, 3000, toph.color_l)
 
@@ -276,7 +274,6 @@ def test_toph():
 
         color_order.append(None)
         duct_seek_routine_new(toph, color_order[index + 1])
-
 
 
 def test_katara():
