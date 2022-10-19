@@ -124,8 +124,9 @@ def land_main(toph: Robot):
     for color in valid_colors:
         if color not in color_order:
             color_order.append(color)
-    ev3_print(color_order)
-    logic_mbox.send(True)
+    toph.ev3_print(color_order[0])
+    toph.ev3_print(color_order[1])
+    toph.ev3_print(color_order[2])
     # termina com o sensor no buraco na primeira cor da esquerda p/ a direita
 
     # manobras
@@ -138,6 +139,10 @@ def land_main(toph: Robot):
         target_color=Color.BLACK, sensor_color=toph.color_l, motor=toph.motor_l
     )
     # termina com o sensor esquerdo sobre a linha preta da primeira cor
+    toph.stopwatch.reset()
+    while toph.stopwatch.time() < 10000:
+        logic_mbox.send(True)
+        wait(50)
 
     # dutos subsequentes (comunicação bluetooth)
     numeric_mbox = NumericMailbox("measures", server)
@@ -156,7 +161,7 @@ def land_main(toph: Robot):
             toph.line_follower_color_id(toph.color_l, break_color=Color.BLUE)
             index = color_order.index(Color.BLUE)
 
-        color_order.append(None)
+        color_order.append("None")
         duct_seek_routine_new(toph, color_order[index + 1])
         numeric_mbox.send(0)
 
@@ -222,6 +227,11 @@ def test_toph():
         color_max_value=110,
         debug=True,
     )
+
+    # toph.pid_turn(120)
+    # toph.turn_till_color(direction="right",sensor_color=toph.color_l,target_color=Color.BLACK)
+    # #####
+    # toph.pid_line_grabber(100, 3000, toph.color_l)
 
     # toph.pid_line_grabber(100, 3000, toph.color_l)
     # toph.line_follower_color_id(toph.color_l)

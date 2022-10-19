@@ -169,7 +169,9 @@ def duct_seek_routine_new(robot: Robot, color):
         # robot.walk_to_hole(
         #     mode=3, color_check_color=color, color_check_sensor=robot.color_l
         # )
+
         robot.walk_till_duct(color_check_color=color, color_check_sensor=robot.color_l)
+        
         robot.brick.light.off()
         robot.brick.speaker.beep()
 
@@ -178,9 +180,12 @@ def duct_seek_routine_new(robot: Robot, color):
         travelled_distance = travelled_distance + degrees
         # print("1", travelled_distance)
         robot.brick.light.on(Color.RED)
-        duct_length = robot.duct_measurement(
-            color_check_color=color, color_check_sensor=robot.color_l
-        )
+        # duct_length = robot.duct_measurement(
+        #     color_check_color=color, color_check_sensor=robot.color_l
+        # )
+
+        duct_length = robot.duct_measurement_new(color_check_color=color, color_check_sensor=robot.color_l)
+        
         robot.brick.light.off()
         robot.brick.speaker.beep()
 
@@ -212,13 +217,16 @@ def duct_seek_routine_new(robot: Robot, color):
 
     robot.pid_walk(cm=(travelled_distance_cm - optimal_motor_choice), vel=-60)
     robot.pid_turn(-90)
-
+    robot.pid_walk(cm=2, vel=-50)
+    robot.forward_while_same_reflection()
+    robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
     ###REFATORAR, DAR UMA OLHADA
 
     # recolhe o duto
     dist = robot.ultra_front.distance()
     dist = max(1, dist - 5)
     robot.move_to_distance(40, sensor=robot.ultra_front, max_cm=35)
+    robot.min_aligner(robot.ultra_front.distance)
     robot.pid_walk(cm=7, vel=20)
     robot.off_motors()
     robot.motor_claw.reset_angle(0)
