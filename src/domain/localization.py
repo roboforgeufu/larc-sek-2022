@@ -115,16 +115,18 @@ def land_position_routine(robot: Robot):
 
             robot.pid_accelerated_walk(-500, 2)
             robot.pid_turn(90)
-            robot.turn_till_color(direction="right",sensor_color=robot.color_l,target_color=Color.BLACK)
+            robot.turn_till_color(
+                direction="right", sensor_color=robot.color_l, target_color=Color.BLACK
+            )
             #####
             robot.pid_line_grabber(100, 3000, robot.color_l)
-            color_order = robot.line_follower_color_id(
-                robot.color_l, array=color_order
-            )
+            color_order = robot.line_follower_color_id(robot.color_l, array=color_order)
             ev3_print(color_order, ev3=robot.brick)
             robot.pid_accelerated_walk(-500, 2)
             robot.pid_turn(-90)
-            robot.turn_till_color(direction="left",sensor_color=robot.color_r,target_color=Color.BLACK)
+            robot.turn_till_color(
+                direction="left", sensor_color=robot.color_r, target_color=Color.BLACK
+            )
 
             #####
             robot.pid_line_grabber(100, 3000, robot.color_r)
@@ -181,7 +183,7 @@ def back_to_water_routine(robot: Robot):
     robot.one_wheel_turn(robot.motor_r, -90, 40)
     robot.pid_walk(3, -40)
 
-    robot.forward_while_same_reflection(reflection_diff=2)
+    robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
     robot.pid_walk(12, vel=-30)
 
     robot.pid_turn(-90)
