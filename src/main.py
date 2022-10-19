@@ -107,27 +107,27 @@ def land_main(toph: Robot):
     server.wait_for_connection()
     toph.ev3_print("SERVER: connected!")
 
-    # # espera a katara sair da meeting area
-    # # antes de comecar a rotina de localizacao
+    # espera a katara sair da meeting area
+    # antes de comecar a rotina de localizacao
     logic_mbox = LogicMailbox("start", server)
 
-    # # espera a katara falar q conectou
+    # espera a katara falar q conectou
     logic_mbox.wait()
     logic_mbox.send(True)
 
-    # # katara desceu a rampa
+    # katara desceu a rampa
     logic_mbox.wait()
 
-    # # algoritmo de localizacao terrestre
+    # algoritmo de localizacao terrestre
     color_order = land_position_routine(toph)
     valid_colors = [Color.YELLOW, Color.RED, Color.BLUE]
     for color in valid_colors:
         if color not in color_order:
             color_order.append(color)
     ev3_print(color_order)
-    # # termina com o sensor no buraco na primeira cor da esquerda p/ a direita
+    # termina com o sensor no buraco na primeira cor da esquerda p/ a direita
 
-    # # manobras
+    # manobras
     toph.pid_walk(cm=5, vel=-60)
     toph.pid_turn(90)
     toph.pid_walk(cm=5, vel=-60)
@@ -204,6 +204,24 @@ def water_main(katara: Robot):
         duct_get(katara)
         back_to_water_routine(katara)
         delivery = measured_value
+
+def test_toph():
+    toph = Robot(
+        wheel_diameter=const.WHEEL_DIAMETER,
+        wheel_distance=const.WHEEL_DIST,
+        motor_claw=Port.A,
+        motor_r=Port.C,
+        motor_l=Port.B,
+        ultra_front=Port.S4,
+        infra_side=Port.S3,
+        color_l=Port.S1,
+        color_r=Port.S2,
+        turn_correction=0.9,
+        color_max_value=110,
+        debug=True,
+    )
+
+    toph.line_follower_color_id(toph.color_l)
 
 
 def test_katara():
@@ -336,4 +354,4 @@ def color_guessing():
 
 
 if __name__ == "__main__":
-    test_katara()
+    test_toph()

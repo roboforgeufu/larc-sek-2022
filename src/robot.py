@@ -282,7 +282,7 @@ class Robot:
         motor.reset_angle(0)
         target_motor = self.motor_r if motor == self.motor_l else self.motor_l
         target_motor.run_target(100, -220 + degrees)
-        self.pid_line_grabber(50, 2000, sensor_color)
+        self.pid_line_grabber(50, 3000, sensor_color)
 
     def move_both_to_target(
         self,
@@ -662,7 +662,10 @@ class Robot:
         self.motor_l.hold()
         self.motor_r.hold()
 
-    def line_follower_color_id(self, sensor, vel=80, array=None, break_color="None"):
+    def line_follower_color_id(self, sensor, vel=60, array=None, break_color="None"):
+        color_read = None
+        elapsed_time = 0
+        correction = 0
         while True:
             if array is None:
                 array = []
@@ -676,11 +679,25 @@ class Robot:
             ):
                 sign = sign * (-1)
 
-            print(sign, self.accurate_color(sensor.rgb()))
-            self.motor_r.dc(vel + (vel * 0.1 * sign))
-            self.motor_l.dc(vel - (vel * 0.1 * sign))
-
+            prev_color_read = color_read
             color_read = self.accurate_color(sensor.rgb())
+            if prev_color_read != color_read:
+                prev_elapsed_time = elapsed_time
+                elapsed_time = self.stopwatch.time()
+                time = prev_elapsed_time - elapsed_time
+                if time in range(0,50):
+                    correction = 0
+                    print("1")
+                elif time in range(50,150):
+                    correction = 15
+                    print("2")
+                elif time > 150:
+                    correction = 30
+                    print("3")
+
+            self.motor_r.dc(vel + ((sign * (vel * 0.5)) + correction))
+            self.motor_l.dc(vel - ((sign * (vel * 0.5)) + correction))
+
             if color_read not in array and color_read in valid_colors:
                 array.append(self.accurate_color(sensor.rgb()))
 
@@ -698,6 +715,68 @@ class Robot:
         self.motor_l.hold()
 
         return array
+
+    def line_follower_duct_measure(self, sensor, vel=40, break_color="None"):
+        color_read = None
+        elapsed_time = 0
+        correction = 0
+        ultra_read = 2550
+        reads = []
+        reads_mean = 100
+        motor_mean = 0
+        results = []
+
+        self.motor_l.reset_angle(0)
+        self.motor_r.reset_angle(0)
+        while True:
+
+            sign = 1 if sensor == self.color_l else -1
+            if (
+                (self.accurate_color(sensor.rgb()) != Color.WHITE)
+                and (self.accurate_color(sensor.rgb()) != Color.BLACK)
+                and (self.accurate_color(sensor.rgb()) != "None")
+            ):
+                sign = sign * (-1)
+
+            prev_color_read = color_read
+            color_read = self.accurate_color(sensor.rgb())
+ 
+            ultra_read = self.infra_side.distance()
+            reads.append(ultra_read)
+            if(len(reads)>=10):
+                reads_mean = sum(reads[-10:])/10
+                reads.clear()
+
+            if(reads_mean < 50):
+                self.pid_walk(cm=1,vel=-40)
+                self.pid_line_grabber(100,1000,self.color_l)
+                self.walk_to_hole(mode=3, color_check_color=break_color, color_check_sensor=self.color_l)
+                self.brick.speaker.beep()
+                duct_length = self.duct_measurement(color_check_color=break_color, color_check_sensor=self.color_l)
+                self.brick.speaker.beep()
+                results.append(duct_length)
+
+            prev_motor_mean = motor_mean
+            motor_mean = (self.motor_l.angle() + self.motor_r.angle())/2
+
+            if prev_color_read != color_read:
+                prev_elapsed_time = elapsed_time
+                elapsed_time = self.stopwatch.time()
+                time = prev_elapsed_time - elapsed_time
+                if time in range(0,50):
+                    correction = 20
+                elif time in range(50,150):
+                    correction = 10
+                elif time > 150:
+                    correction = 5
+
+            self.motor_r.dc(vel + ((sign * (vel * 0.3)) + correction))
+            self.motor_l.dc(vel - ((sign * (vel * 0.3)) - correction))
+
+
+            if color_read == break_color:
+                return
+            
 
     def min_aligner(
         self, min_function, speed: int = 40, max_angle=90, acceptable_range=0
@@ -954,8 +1033,10 @@ class Robot:
             )
 
             pid_correction = p_share + i_share + d_share
+            
             self.motor_r.dc(vel - pid_correction)
             self.motor_l.dc(vel + pid_correction)
+
         self.motor_l.hold()
         self.motor_r.hold()
 
@@ -963,6 +1044,8 @@ class Robot:
             const.WHEEL_DIAMETER * math.pi
         )  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
         degrees = (self.motor_l.angle() + self.motor_r.angle()) / 2
+        #erro medio de medida -> 80 graus
+        print(degrees)
         return (degrees / 360) * WHEEL_LENGTH
 
     def walk_to_hole(
@@ -1060,6 +1143,13 @@ class Robot:
                 )
 
                 pid_correction = p_share + i_share + d_share
+
+                bias = 1
+                if(self.accurate_color(color_check_sensor.rgb())==Color.BLACK):
+                    bias = 2
+                    self.motor_r.dc(bias * vel)
+                    self.motor_l.dc(vel)
+
                 self.motor_r.dc(vel - pid_correction)
                 self.motor_l.dc(vel + pid_correction)
 
