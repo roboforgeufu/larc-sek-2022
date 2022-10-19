@@ -270,8 +270,8 @@ class Robot:
 
     def one_wheel_turn_till_color(self, motor: Motor, sensor_color, target_color):
         motor.reset_angle(0)
+        vel = 50
         while self.accurate_color(sensor_color.rgb()) != target_color:
-            vel = 50
             motor.dc(vel)
         self.off_motors()
         return motor.angle()
@@ -701,11 +701,11 @@ class Robot:
 
             color_read = self.accurate_color(sensor.rgb())
             color_reads.append(color_read)
-            left_multiplier = 0.33
-            right_multiplier = 0.33
-            if len(color_reads) == num_reads:
-                black_count_perc = (color_reads.count(Color.BLACK)) / num_reads
-                white_count_perc = (color_reads.count(Color.WHITE)) / num_reads
+            left_multiplier = 0.25
+            right_multiplier = 0.25
+            if(len(color_reads)==num_reads):
+                black_count_perc = (color_reads.count(Color.BLACK))/num_reads
+                white_count_perc = (color_reads.count(Color.WHITE))/num_reads
                 wrong_read_perc = black_count_perc + white_count_perc
                 color_count_perc = 1 - wrong_read_perc
                 color_reads.clear()
@@ -714,7 +714,7 @@ class Robot:
             self.motor_l.dc(vel - (vel * color_count_perc * left_multiplier * sign))
 
             if color_read not in array and color_read in valid_colors:
-                array.append(self.accurate_color(sensor.rgb()))
+                array.append(color_read)
 
             if break_color is "None":
                 if len(array) >= 2:
@@ -1004,6 +1004,55 @@ class Robot:
         degrees = (self.motor_l.angle() + self.motor_r.angle()) / 2
         # erro medio de medida -> 80 graus
         print(degrees)
+        return (degrees / 360) * WHEEL_LENGTH
+
+    def duct_measurement_new(
+        self,
+        vel=50,
+        color_check_color=None,
+        color_check_sensor=None,
+    ):
+        color_reads = []
+        num_reads = 10
+        wrong_read_perc = 0.5
+        color_count_perc = 0.5
+        self.motor_l.reset_angle(0)
+        self.motor_r.reset_angle(0)
+        while self.get_average_reading(self.infra_side.distance) < 50 and (
+                color_check_color is None
+                or self.accurate_color(color_check_sensor.rgb()) != color_check_color
+        ):
+            sign = 1 if color_check_sensor == self.color_l else -1
+            if (
+                (self.accurate_color(color_check_sensor.rgb()) != Color.WHITE)
+                and (self.accurate_color(color_check_sensor.rgb()) != Color.BLACK)
+                and (self.accurate_color(color_check_sensor.rgb()) != "None")
+            ):
+                sign = sign * (-1)
+
+            color_read = self.accurate_color(color_check_sensor.rgb())
+            color_reads.append(color_read)
+            left_multiplier = 0.33
+            right_multiplier = 0.33
+            if(len(color_reads)==num_reads):
+                black_count_perc = (color_reads.count(Color.BLACK))/num_reads
+                white_count_perc = (color_reads.count(Color.WHITE))/num_reads
+                wrong_read_perc = black_count_perc + white_count_perc
+                color_count_perc = 1 - wrong_read_perc
+                color_reads.clear()
+                    
+            self.motor_r.dc(vel + (vel * wrong_read_perc * right_multiplier * sign))
+            self.motor_l.dc(vel - (vel * color_count_perc * left_multiplier * sign))
+
+        self.motor_l.hold()
+        self.motor_r.hold()
+
+        WHEEL_LENGTH = (
+            const.WHEEL_DIAMETER * math.pi
+        )  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
+        degrees = (self.motor_l.angle() + self.motor_r.angle()) / 2
+        # erro medio de medida -> 80 graus
+        # print(degrees)
         return (degrees / 360) * WHEEL_LENGTH
 
     def walk_to_hole(

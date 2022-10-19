@@ -114,19 +114,18 @@ def land_position_routine(robot: Robot):
             robot.line_follower_color_id(robot.color_r)
 
             robot.pid_accelerated_walk(-500, 2)
-            robot.pid_turn(90)
-            robot.turn_till_color(
-                direction="right", sensor_color=robot.color_l, target_color=Color.BLACK
-            )
+            robot.pid_turn(150)
+            robot.turn_till_color(direction="right",sensor_color=robot.color_l,target_color=Color.BLACK)
             #####
             robot.pid_line_grabber(100, 3000, robot.color_l)
-            color_order = robot.line_follower_color_id(robot.color_l, array=color_order)
+            # robot.turn_till_color_routine(robot.motor_r, robot.color_l, Color.BLACK)
+            color_order = robot.line_follower_color_id(
+                robot.color_l, array=color_order
+            )
             ev3_print(color_order, ev3=robot.brick)
             robot.pid_accelerated_walk(-500, 2)
-            robot.pid_turn(-90)
-            robot.turn_till_color(
-                direction="left", sensor_color=robot.color_r, target_color=Color.BLACK
-            )
+            robot.pid_turn(-150)
+            robot.turn_till_color(direction="left",sensor_color=robot.color_r,target_color=Color.BLACK)
 
             #####
             robot.pid_line_grabber(100, 3000, robot.color_r)
