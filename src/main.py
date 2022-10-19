@@ -124,9 +124,11 @@ def land_main(toph: Robot):
     for color in valid_colors:
         if color not in color_order:
             color_order.append(color)
+    color_order.append("None")
     toph.ev3_print(color_order[0])
     toph.ev3_print(color_order[1])
     toph.ev3_print(color_order[2])
+    toph.ev3_print(color_order[3])
     # termina com o sensor no buraco na primeira cor da esquerda p/ a direita
 
     # manobras
@@ -161,7 +163,6 @@ def land_main(toph: Robot):
             toph.line_follower_color_id(toph.color_l, break_color=Color.BLUE)
             index = color_order.index(Color.BLUE)
 
-        color_order.append("None")
         duct_seek_routine_new(toph, color_order[index + 1])
         numeric_mbox.send(0)
         return_to_idle_position(toph)
@@ -230,6 +231,15 @@ def test_toph():
         color_max_value=110,
         debug=True,
     )
+
+    
+    toph.pid_walk(cm=7, vel=-60)
+    toph.certify_line_alignment_routine(
+        target_color=Color.BLACK,
+        sensor_color=toph.color_l,
+        motor=toph.motor_l,
+    )
+    toph.line_follower_color_id(toph.color_l)
 
     # toph.pid_turn(120)
     # toph.turn_till_color(direction="right",sensor_color=toph.color_l,target_color=Color.BLACK)
@@ -417,15 +427,17 @@ def color_guessing():
 
     robot.brick.speaker.beep()
     while not robot.brick.buttons.pressed():
-        # robot.ev3_print(
-        #     robot.color_l.rgb(),
-        #     normalize_color(robot.color_l.rgb()),
-        #     robot.accurate_color(robot.color_l.rgb()),
-        # )
         robot.ev3_print(
+            "L:",
+            robot.accurate_color(robot.color_l.rgb()),
+            robot.color_l.rgb(),
+            normalize_color(robot.color_l.rgb()),
+        )
+        robot.ev3_print(
+            "R:",
+            robot.accurate_color(robot.color_r.rgb()),
             robot.color_r.rgb(),
             normalize_color(robot.color_r.rgb()),
-            robot.accurate_color(robot.color_r.rgb()),
         )
         wait(100)
 

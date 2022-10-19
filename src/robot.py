@@ -290,7 +290,8 @@ class Robot:
         motor.reset_angle(0)
         target_motor = self.motor_r if motor == self.motor_l else self.motor_l
         target_motor.run_target(100, -220 + degrees)
-        self.pid_line_grabber(50, 3000, sensor_color)
+        # self.pid_line_grabber(50, 3000, sensor_color)
+        self.line_grabber(sensor_color,time=3000)
 
     def move_both_to_target(
         self,
@@ -421,7 +422,7 @@ class Robot:
             left_wheel_angle_distance = self.motor_l.angle() - initial_angle_l
             right_wheel_angle_distance = self.motor_r.angle() - initial_angle_r
 
-            self.ev3_print("C:", self.motor_l.speed(), self.motor_r.speed())
+            # self.ev3_print("C:", self.motor_l.speed(), self.motor_r.speed())
             if (
                 abs(self.motor_l.speed()) < const.PID_TURN_MIN_SPEED
                 and abs(self.motor_r.speed()) < const.PID_TURN_MIN_SPEED
@@ -627,6 +628,44 @@ class Robot:
                 break
         self.off_motors()
 
+    def line_grabber(self, sensor, time, vel=20):
+        color_reads = []
+        num_reads = 10
+        wrong_read_perc = 0.5
+        color_count_perc = 0.5
+        while True:
+
+            sign = 1 if sensor == self.color_l else -1
+            if (
+                (self.accurate_color(sensor.rgb()) != Color.WHITE)
+                and (self.accurate_color(sensor.rgb()) != Color.BLACK)
+                and (self.accurate_color(sensor.rgb()) != "None")
+            ):
+                sign = sign * (-1)
+
+            color_read = self.accurate_color(sensor.rgb())
+            color_reads.append(color_read)
+            left_multiplier = 0.8
+            right_multiplier = 0.8
+            if(len(color_reads)==num_reads):
+                black_count_perc = (color_reads.count(Color.BLACK))/num_reads
+                white_count_perc = (color_reads.count(Color.WHITE))/num_reads
+                wrong_read_perc = black_count_perc + white_count_perc
+                color_count_perc = 1 - wrong_read_perc
+                color_reads.clear()
+
+            self.motor_r.dc(vel + (vel * wrong_read_perc * right_multiplier * sign))
+            self.motor_l.dc(vel - (vel * color_count_perc * left_multiplier * sign))
+
+            if color_read == "None":
+                break
+
+            if self.stopwatch.time() > time:
+                break
+
+        self.motor_r.hold()
+        self.motor_l.hold()
+
     def pid_line_grabber(  # pylint: disable=invalid-name
         self,
         vel,
@@ -681,7 +720,7 @@ class Robot:
         self.motor_l.hold()
         self.motor_r.hold()
 
-    def line_follower_color_id(self, sensor, vel=80, array=None, break_color="None"):
+    def line_follower_color_id(self, sensor, vel=50, array=None, break_color="None"):
         color_reads = []
         num_reads = 10
         wrong_read_perc = 0.5
@@ -701,8 +740,8 @@ class Robot:
 
             color_read = self.accurate_color(sensor.rgb())
             color_reads.append(color_read)
-            left_multiplier = 0.25
-            right_multiplier = 0.25
+            left_multiplier = 0.33
+            right_multiplier = 0.33
             if(len(color_reads)==num_reads):
                 black_count_perc = (color_reads.count(Color.BLACK))/num_reads
                 white_count_perc = (color_reads.count(Color.WHITE))/num_reads
@@ -1273,3 +1312,8 @@ class Robot:
             measures.append(sensor_func())
         mean = sum(measures) / len(measures)
         return mean
+
+
+        
+
+
