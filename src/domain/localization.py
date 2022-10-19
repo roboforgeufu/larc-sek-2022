@@ -83,7 +83,6 @@ def water_position_routine(robot: Robot):
         else:
             break
     robot.off_motors()
-    # ROBO NA RAMPA
 
 
 def land_position_routine(robot: Robot):
@@ -91,7 +90,7 @@ def land_position_routine(robot: Robot):
 
     color_order = []  # type: ignore
     while True:
-        robot.forward_while_same_reflection(80, 80, 10)
+        robot.forward_while_same_reflection(60, 60, 10)
         robot.pid_walk(cm=2, vel=-60)
         robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
         robot.pid_walk(cm=1, vel=40)
@@ -110,27 +109,23 @@ def land_position_routine(robot: Robot):
                 sensor_color=robot.color_r,
                 motor=robot.motor_r,
             )
-
             robot.line_follower_color_id(robot.color_r)
+
 
             robot.pid_accelerated_walk(-500, 2)
             robot.pid_turn(150)
             robot.turn_till_color(
                 direction="right", sensor_color=robot.color_l, target_color=Color.BLACK
             )
-            #####
-            robot.pid_line_grabber(100, 3000, robot.color_l)
-            # robot.turn_till_color_routine(robot.motor_r, robot.color_l, Color.BLACK)
+            robot.line_grabber(vel = 20, time = 3000, sensor = robot.color_l)
             color_order = robot.line_follower_color_id(robot.color_l, array=color_order)
-            ev3_print(color_order, ev3=robot.brick)
+
             robot.pid_accelerated_walk(-500, 2)
             robot.pid_turn(-150)
             robot.turn_till_color(
                 direction="left", sensor_color=robot.color_r, target_color=Color.BLACK
             )
-
-            #####
-            robot.pid_line_grabber(100, 3000, robot.color_r)
+            robot.line_grabber(vel = 20, time = 3000, sensor = robot.color_r)
             robot.line_follower_color_id(robot.color_r)
 
             break

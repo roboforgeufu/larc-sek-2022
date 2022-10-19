@@ -295,7 +295,7 @@ class Robot:
         target_motor = self.motor_r if motor == self.motor_l else self.motor_l
         target_motor.run_target(100, -220 + degrees)
         # self.pid_line_grabber(50, 3000, sensor_color)
-        self.line_grabber(sensor_color, time=3000)
+        self.line_grabber(vel=20, time=3000, sensor=sensor_color)
 
     def move_both_to_target(
         self,
@@ -637,6 +637,7 @@ class Robot:
         num_reads = 10
         wrong_read_perc = 0.5
         color_count_perc = 0.5
+        self.stopwatch.reset()
         while True:
 
             sign = 1 if sensor == self.color_l else -1
@@ -649,8 +650,8 @@ class Robot:
 
             color_read = self.accurate_color(sensor.rgb())
             color_reads.append(color_read)
-            left_multiplier = 0.8
-            right_multiplier = 0.8
+            left_multiplier = 1.5
+            right_multiplier = 1.5
             if len(color_reads) == num_reads:
                 black_count_perc = (color_reads.count(Color.BLACK)) / num_reads
                 white_count_perc = (color_reads.count(Color.WHITE)) / num_reads
@@ -660,6 +661,7 @@ class Robot:
 
             self.motor_r.dc(vel + (vel * wrong_read_perc * right_multiplier * sign))
             self.motor_l.dc(vel - (vel * color_count_perc * left_multiplier * sign))
+            print(vel + (vel * wrong_read_perc * right_multiplier * sign),vel - (vel * color_count_perc * left_multiplier * sign))
 
             if color_read == "None":
                 break
