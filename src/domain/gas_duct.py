@@ -104,12 +104,23 @@ def duct_measure_hole(robot: Robot):
     measurement = robot.hole_measurement()
 
     robot.ev3_print("MEASURE:", measurement)
-    if measurement > 17:
-        measured_value = 20
-    elif measurement > 12:
-        measured_value = 15
-    elif measurement >= 10:
+
+    diff_to_size = [
+        abs(measurement - 12),
+        abs(measurement - 17),
+        abs(measurement - 22),
+    ]
+    min_diff_idx = diff_to_size.index(min(diff_to_size))
+
+    if min_diff_idx == 0 and min(diff_to_size) > 3:
+        # Leu um valor pequeno (< 10), mas muito menor que 10 (buraco a ser ignorado)
+        measured_value = 0
+    elif min_diff_idx == 0:
         measured_value = 10
+    elif min_diff_idx == 1:
+        measured_value = 15
+    elif min_diff_idx == 2:
+        measured_value = 20
     else:
         measured_value = 0
     robot.ev3_print("S_MEASURE:", measured_value)
