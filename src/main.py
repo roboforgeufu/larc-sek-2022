@@ -238,6 +238,14 @@ def test_toph():
         debug=True,
     )
 
+    duct_ends(toph)
+    wait_button_pressed(toph.brick)
+    toph.pid_walk(cm=8, vel=20)
+    toph.off_motors()
+    wait_button_pressed(toph.brick)
+    toph.motor_claw.reset_angle(0)
+    toph.motor_claw.run_target(300, const.CLAW_UP)
+    wait_button_pressed(toph.brick)
 
     # algoritmo de localizacao terrestre
     color_order = land_position_routine(toph)
@@ -246,6 +254,7 @@ def test_toph():
         if color not in color_order:
             color_order.append(color)
     color_order.append("None")
+    toph.ev3_print(color_order)
     toph.ev3_print(color_order[0])
     toph.ev3_print(color_order[1])
     toph.ev3_print(color_order[2])
@@ -264,7 +273,7 @@ def test_toph():
     # termina com o sensor esquerdo sobre a linha preta da primeira cor
 
     # dutos subsequentes (comunicação bluetooth)
-    num = 10
+    num = 15
     while True:
 
         if num == 10:

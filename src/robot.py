@@ -728,6 +728,7 @@ class Robot:
 
     def line_follower_color_id(self, sensor, vel=50, array=None, break_color="None"):
         color_reads = []
+        all_color_reads = []
         num_reads = 10
         wrong_read_perc = 0.5
         color_count_perc = 0.5
@@ -753,13 +754,28 @@ class Robot:
                 white_count_perc = (color_reads.count(Color.WHITE)) / num_reads
                 wrong_read_perc = black_count_perc + white_count_perc
                 color_count_perc = 1 - wrong_read_perc
+                all_color_reads.extend(color_reads)
                 color_reads.clear()
 
             self.motor_r.dc(vel + (vel * wrong_read_perc * right_multiplier * sign))
             self.motor_l.dc(vel - (vel * color_count_perc * left_multiplier * sign))
 
-            if color_read not in array and color_read in valid_colors:
-                array.append(color_read)
+            # if color_read not in array and color_read in valid_colors:
+            if len(all_color_reads) > 100:
+                y_count = all_color_reads.count(Color.YELLOW)
+                r_count = all_color_reads.count(Color.RED)
+                b_count = all_color_reads.count(Color.BLUE)
+                max_count = max(y_count,r_count,b_count)
+                if max_count == y_count:
+                    if Color.YELLOW not in array:
+                        array.append(Color.YELLOW)
+                elif max_count == r_count:
+                    if Color.RED not in array:
+                        array.append(Color.RED)
+                elif max_count == b_count:
+                    if Color.BLUE not in array:
+                        array.append(Color.BLUE)
+                all_color_reads.clear()
 
             if break_color is "None":
                 if len(array) >= 2:
