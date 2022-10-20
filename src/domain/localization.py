@@ -17,7 +17,7 @@ def check_land_position_by_color(robot: Robot) -> str:
     color_left = robot.accurate_color(robot.color_l.rgb())
     color_right = robot.accurate_color(robot.color_r.rgb())
 
-    robot.ev3_print(color_left, color_right)
+    # robot.ev3_print(color_left, color_right)
 
     if color_left == Color.GREEN:
         pos_left = "RAMP"
@@ -90,11 +90,13 @@ def land_position_routine(robot: Robot):
 
     color_order = []  # type: ignore
     while True:
-        robot.forward_while_same_reflection(60, 60, 10)
+        robot.forward_while_same_reflection(50, 50, 20)
         robot.pid_walk(cm=2, vel=-60)
         robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
         robot.pid_walk(cm=1, vel=40)
         location = check_land_position_by_color(robot)
+
+        robot.ev3_print(location)
 
         if location == "RAMP":
 

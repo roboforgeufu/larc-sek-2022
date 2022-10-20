@@ -46,7 +46,6 @@ from utils import PIDValues, ev3_print
 
 def duct_ends(
     robot: Robot,
-    speed: int = 25,
 ):
     """
     Com o ultrassonico da frente apontando para um duto,
@@ -55,53 +54,21 @@ def duct_ends(
     Retorna o tamanho do duto lido.
     """
 
-    lowest_ultra_value_l = 2550
-    lowest_ultra_value_r = 2550
-    robot.motor_l.reset_angle(0)
-    robot.motor_r.reset_angle(0)
-    sensor = robot.ultra_front
+    robot.reset_both_motor_angles()
 
-    # robot.stopwatch.reset()
-    # if(sensor.distance() > const.DIST_LINE_TO_END):
-    #     while True:
-    #         robot.motor_l.dc(speed)
-    #         robot.motor_r.dc(-speed)
-    #         if(sensor.distance() < const.DIST_LINE_TO_END):
-    #             robot.pid_turn(20)
-    #             break
-    #         elif(robot.stopwatch.time()>3000):
-    #             while sensor.distance() < const.DUCT_ENDS_US_DIFF:
-    #                 robot.motor_l.dc(-speed)
-    #                 robot.motor_r.dc(speed)
-    #                 robot.pid_turn(-20)
-    #                 break
-    # wait(500)
+    #####
 
-    while sensor.distance() < const.DUCT_ENDS_US_DIFF:
-        robot.motor_l.dc(speed)
-        robot.motor_r.dc(-speed)
-        lowest_ultra_value_r = min(lowest_ultra_value_r, sensor.distance())
+    robot.move_until_end_of_duct()
 
-    while sensor.distance() > const.DUCT_ENDS_US_DIFF:
-        robot.motor_l.dc(-speed)
-        robot.motor_r.dc(speed)
+    robot.reset_both_motor_angles()
+    robot.move_until_beginning_of_duct(inverted=True)
 
-    robot.motor_l.reset_angle(0)
-    robot.motor_r.reset_angle(0)
-    while sensor.distance() < const.DUCT_ENDS_US_DIFF:
-        robot.motor_l.dc(-speed)
-        robot.motor_r.dc(speed)
-        lowest_ultra_value_l = min(lowest_ultra_value_l, sensor.distance())
+    robot.move_until_end_of_duct(inverted=True)
 
+    motor_correction = (abs(robot.motor_l.angle()) + abs(robot.motor_l.angle())) / 4
+    robot.move_both_to_target(target_l=-motor_correction,target_r=motor_correction)
     robot.off_motors()
-    ultra_mean = (lowest_ultra_value_l + lowest_ultra_value_r) / 2
-    motor_mean = (abs(robot.motor_l.angle()) + abs(robot.motor_l.angle())) / 2
-    robot.pid_turn(motor_mean / 2, mode=2)
 
-    theta = (const.WHEEL_DIAMETER * motor_mean) / (const.WHEEL_DIST)
-    theta_rad = (theta * math.pi) / 180
-    arc_length = theta_rad * ((ultra_mean / 10) + 8)
-    return arc_length
 
 def align_duct_center(robot: Robot):
     """O robô alinha no centro do duto correspondente"""
@@ -191,7 +158,6 @@ def duct_seek_routine_new(robot: Robot, color):
         )
 
         robot.off_motors()
-        wait(50)
 
     robot.off_motors()
     travelled_distance_cm = (travelled_distance / 360) * const.WHEEL_LENGTH
@@ -226,7 +192,10 @@ def duct_seek_routine_new(robot: Robot, color):
     # alinha com a linha preta e o buraco para deixar o duto numa posição padrão
     robot.forward_while_same_reflection(speed_r=-60, speed_l=-60)
     robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
-    robot.pid_walk(cm=15, vel=-60)
+    robot.pid_walk(cm=5, vel=-60)
+    robot.forward_while_same_reflection()
+    robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
+    robot.pid_walk(cm=20, vel=-60)
     robot.pid_turn(-90)
     robot.forward_while_same_reflection()
     robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
@@ -237,7 +206,7 @@ def duct_seek_routine_new(robot: Robot, color):
     robot.forward_while_same_reflection()
     robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
     robot.pid_walk(cm=25, vel=-30)
-    robot.motor_claw.run_target(300, 0)
+    robot.motor_claw.run_target(300, -10)
 
 def return_to_idle_position(robot: Robot):
     # alinha com o buraco restaurando a posicao inicial
@@ -252,6 +221,4 @@ def return_to_idle_position(robot: Robot):
     robot.forward_while_same_reflection()
     robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
     robot.pid_walk(cm=7, vel=-60)
-    robot.certify_line_alignment_routine(
-        target_color=Color.BLACK, sensor_color=robot.color_l, motor=robot.motor_l
-    )
+
