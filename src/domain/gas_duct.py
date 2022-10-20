@@ -22,22 +22,9 @@ def gas_duct_routine(robot: Robot, delivery=None):
         wall_flw_value = robot.pid_wall_follower(front_sensor=robot.ultra_front)
         if wall_flw_value == 1:
             # Curva pra dentro ou buraco
-            initial_motor_l = robot.motor_l.angle()
-            initial_motor_r = robot.motor_r.angle()
-            while robot.infra_side.distance() < const.WALL_SEEN_DIST and (
-                abs(robot.motor_l.angle() - initial_motor_l)
-                < robot.cm_to_motor_degrees(5)
-                and abs(robot.motor_r.angle() - initial_motor_r)
-                < robot.cm_to_motor_degrees(5)
-            ):
-                robot.brick.light.on(Color.ORANGE)
-                robot.motor_l.dc(30)
-                robot.motor_r.dc(30)
-            robot.off_motors()
-            robot.brick.light.off()
+            robot.simple_walk(1, 30)
 
-            if robot.infra_side.distance() < const.WALL_SEEN_DIST:
-                robot.brick.speaker.beep(350)
+            if check_small_gap(robot):
                 continue
 
             if check_hole(robot):
@@ -57,8 +44,6 @@ def gas_duct_routine(robot: Robot, delivery=None):
                             delivery = None
                     else:
                         return measured_value
-                else:
-                    continue
             else:
                 # curva pra dentro
                 duct_follower_turn_routine(robot)
@@ -107,6 +92,14 @@ def check_hole(robot: Robot):
         robot.min_aligner(robot.infra_side.distance)
     robot.motor_sensor.run_target(const.INFRA_SPEED, const.INFRA_UP)
     return hole_seen
+
+
+def check_small_gap(robot: Robot):
+    """Confere se é um buraco pequeno no gasoduto. Retorna True caso seja."""
+    robot.simple_walk(const.GAS_DUCT_SMALL_GAP, 30)
+    duct_seen = robot.infra_side.distance() <= const.WALL_SEEN_DIST
+    robot.simple_walk(const.GAS_DUCT_SMALL_GAP, -30)
+    return duct_seen
 
 
 def duct_measure_hole(robot: Robot):
