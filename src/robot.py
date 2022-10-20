@@ -216,7 +216,9 @@ class Robot:
                 self.motor_l.hold()
         self.off_motors()
 
-    def simple_turn(self, angle, speed=50, look_around_function=None):
+    def simple_turn(
+        self, angle, speed=50, look_around_function=None, motor_correction=None
+    ):
         """
         Curva simples.
 
@@ -225,12 +227,26 @@ class Robot:
         as leituras durante a curva.
 
         A lista retornada contém tuplas com: (valores lidos, motor_r, motor_l).
+
+        motor_correction é um valor de 0 a 1
+        O sinal de motor_correction define em qual motor a correção será aplicada:
+        - Negativo: motor direito
+        - Positivo: motor esquerdo
         """
         dir_sign = 1 if angle > 0 else -1
         speed = abs(speed)
 
         motor_degrees = self.robot_axis_to_motor_degrees(abs(angle))
-        
+        if motor_correction is not None:
+            if motor_correction > 0:
+                motor_degrees_l = motor_degrees * abs(motor_correction)
+                motor_degrees_r = motor_degrees
+            else:
+                motor_degrees_r = motor_degrees * abs(motor_correction)
+                motor_degrees_l = motor_degrees
+        else:
+            motor_degrees_l = motor_degrees
+            motor_degrees_r = motor_degrees
 
         initial_angle_l = self.motor_l.angle()
         initial_angle_r = self.motor_r.angle()
@@ -238,8 +254,8 @@ class Robot:
         reads = []
 
         while (
-            abs(self.motor_l.angle() - initial_angle_l) < motor_degrees
-            or abs(self.motor_r.angle() - initial_angle_r) < motor_degrees
+            abs(self.motor_l.angle() - initial_angle_l) < motor_degrees_l
+            or abs(self.motor_r.angle() - initial_angle_r) < motor_degrees_r
         ):
             if look_around_function is not None:
                 reads.append(
@@ -661,7 +677,10 @@ class Robot:
 
             self.motor_r.dc(vel + (vel * wrong_read_perc * right_multiplier * sign))
             self.motor_l.dc(vel - (vel * color_count_perc * left_multiplier * sign))
-            print(vel + (vel * wrong_read_perc * right_multiplier * sign),vel - (vel * color_count_perc * left_multiplier * sign))
+            print(
+                vel + (vel * wrong_read_perc * right_multiplier * sign),
+                vel - (vel * color_count_perc * left_multiplier * sign),
+            )
 
             if color_read == "None":
                 break
@@ -765,7 +784,7 @@ class Robot:
                 y_count = all_color_reads.count(Color.YELLOW)
                 r_count = all_color_reads.count(Color.RED)
                 b_count = all_color_reads.count(Color.BLUE)
-                max_count = max(y_count,r_count,b_count)
+                max_count = max(y_count, r_count, b_count)
                 if max_count == y_count:
                     if Color.YELLOW not in array:
                         array.append(Color.YELLOW)
@@ -793,7 +812,12 @@ class Robot:
         return array
 
     def min_aligner(
-        self, min_function, speed: int = 40, max_angle=90, acceptable_range=0
+        self,
+        min_function,
+        speed: int = 40,
+        max_angle=90,
+        acceptable_range=0,
+        motor_correction=None,
     ):
         """
         Alinha os motores usando o mínimo de uma função como alvo.
@@ -802,10 +826,16 @@ class Robot:
         (infra_sensor.distance, por exemplo).
         """
         infra_reads = self.simple_turn(
-            -(max_angle / 2), speed=speed, look_around_function=min_function
+            -(max_angle / 2),
+            speed=speed,
+            look_around_function=min_function,
+            motor_correction=motor_correction,
         )
         second_reads = self.simple_turn(
-            max_angle, speed=speed, look_around_function=min_function
+            max_angle,
+            speed=speed,
+            look_around_function=min_function,
+            motor_correction=motor_correction,
         )
         infra_reads.extend(second_reads)
 
@@ -862,7 +892,7 @@ class Robot:
                 pid.kp * motor_error + pid.ki * motor_error_i + pid.kd * motor_error_d
             )
 
-            # self.ev3_print("IR dff:", dist_diff, "|", motor_error)
+            self.ev3_print("IR dff:", dist_diff, "|", motor_error)
 
             self.ev3_print(
                 motor_error,
@@ -871,11 +901,7 @@ class Robot:
             )
 
             # Condições de parada
-            if (
-                abs(motor_error) > 100
-                and abs(motor_error_i) > 300
-                and abs(motor_error_d) > 60
-            ):
+            if abs(motor_error) > 100 and abs(motor_error_d) > 60:
                 return_value = 1
                 break
             if front_sensor.distance() < 100:

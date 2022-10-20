@@ -21,7 +21,7 @@ WHEEL_LENGTH = WHEEL_DIAMETER * math.pi  # 360 graus = 1 rotacao; 1 rotacao = 17
 SERVER = "toph"
 
 # Localização
-OBSTACLE_DIST = 90
+OBSTACLE_DIST = 170
 
 # Curvas
 PID_TURN_ACCEPTABLE_DEGREE_DIFF = 3
