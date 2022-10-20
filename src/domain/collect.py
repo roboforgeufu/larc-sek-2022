@@ -103,7 +103,6 @@ def duct_ends(
     arc_length = theta_rad * ((ultra_mean / 10) + 8)
     return arc_length
 
-
 def align_duct_center(robot: Robot):
     """O robô alinha no centro do duto correspondente"""
 
@@ -125,7 +124,6 @@ def align_duct_center(robot: Robot):
 
     avg = (first_dist + second_dist) / 2
     robot.move_to_distance(distance=avg)
-
 
 def find_duct(robot: Robot):
     """encontra a menor distância num arco de 90º na frente do robô"""
@@ -155,6 +153,7 @@ def find_duct(robot: Robot):
             robot.off_motors()
             return False, 0
 
+#########################
 
 def duct_seek_routine_new(robot: Robot, color):
 
@@ -166,10 +165,6 @@ def duct_seek_routine_new(robot: Robot, color):
         robot.motor_r.reset_angle(0)
 
         robot.brick.light.on(Color.ORANGE)
-        # robot.walk_to_hole(
-        #     mode=3, color_check_color=color, color_check_sensor=robot.color_l
-        # )
-
         robot.walk_till_duct(color_check_color=color, color_check_sensor=robot.color_l)
         
         robot.brick.light.off()
@@ -178,11 +173,7 @@ def duct_seek_routine_new(robot: Robot, color):
         motor_mean = (robot.motor_l.angle() + robot.motor_r.angle()) / 2
         degrees = motor_mean
         travelled_distance = travelled_distance + degrees
-        # print("1", travelled_distance)
         robot.brick.light.on(Color.RED)
-        # duct_length = robot.duct_measurement(
-        #     color_check_color=color, color_check_sensor=robot.color_l
-        # )
 
         duct_length = robot.duct_measurement_new(color_check_color=color, color_check_sensor=robot.color_l)
         
@@ -198,7 +189,7 @@ def duct_seek_routine_new(robot: Robot, color):
         travelled_distance = travelled_distance + (
             (duct_length * 360) / const.WHEEL_LENGTH
         )
-        # print("2", travelled_distance)
+
         robot.off_motors()
         wait(50)
 
@@ -241,12 +232,12 @@ def duct_seek_routine_new(robot: Robot, color):
     robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
 
     # deixa o duto a 40cm do buraco e 17cm da linha
-    robot.pid_walk(cm=40, vel=-60)
+    robot.pid_walk(cm=40, vel=-30)
     robot.pid_turn(90)
     robot.forward_while_same_reflection()
     robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
     robot.pid_walk(cm=25, vel=-30)
-    robot.motor_claw.run_target(300, -10)
+    robot.motor_claw.run_target(300, 0)
 
 def return_to_idle_position(robot: Robot):
     # alinha com o buraco restaurando a posicao inicial

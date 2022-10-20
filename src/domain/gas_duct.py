@@ -78,7 +78,6 @@ def duct_follower_turn_routine(robot: Robot, speed=const.SEARCH_WALL_SPEED):
     robot.off_motors()
     robot.pid_walk(3)
     robot.brick.speaker.beep()
-    # wait_button_pressed(robot.brick)
 
 
 def check_hole(robot: Robot):
