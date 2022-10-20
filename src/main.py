@@ -143,10 +143,7 @@ def land_main(toph: Robot):
     toph.pid_walk(cm=5, vel=-60)
     toph.forward_while_same_reflection()
     toph.pid_walk(cm=7, vel=-60)
-    toph.certify_line_alignment_routine(
-        target_color=Color.BLACK, sensor_color=toph.color_l, motor=toph.motor_l
-    )
-    # termina com o sensor esquerdo sobre a linha preta da primeira cor
+    # termina de frente para a linha preta
     toph.stopwatch.reset()
     while toph.stopwatch.time() < 10000:
         logic_mbox.send(True)
@@ -156,6 +153,11 @@ def land_main(toph: Robot):
     numeric_mbox = NumericMailbox("measures", server)
     while True:
 
+        #alinha com a linha preta
+        toph.certify_line_alignment_routine(
+            target_color=Color.BLACK, sensor_color=toph.color_l, motor=toph.motor_l
+        )
+        toph.pid_walk(cm=15,vel=-30)
         numeric_mbox.wait()
         num = numeric_mbox.read()
 
@@ -237,15 +239,21 @@ def test_toph():
         color_max_value=110,
         debug=True,
     )
+    
+    toph.pid_walk(cm=15,vel=-30)
+    wait_button_pressed(toph.brick)
 
-    duct_ends(toph)
-    wait_button_pressed(toph.brick)
-    toph.pid_walk(cm=8, vel=20)
-    toph.off_motors()
-    wait_button_pressed(toph.brick)
-    toph.motor_claw.reset_angle(0)
-    toph.motor_claw.run_target(300, const.CLAW_UP)
-    wait_button_pressed(toph.brick)
+    while True:
+        duct_ends(toph)
+        wait_button_pressed(toph.brick)
+        toph.pid_walk(cm=8, vel=20)
+        toph.off_motors()
+        wait_button_pressed(toph.brick)
+        toph.motor_claw.reset_angle(0)
+        toph.motor_claw.run_target(300, const.CLAW_UP)
+        wait_button_pressed(toph.brick)
+        toph.motor_claw.run_target(300, -10)
+        wait_button_pressed(toph.brick)
 
     # algoritmo de localizacao terrestre
     color_order = land_position_routine(toph)

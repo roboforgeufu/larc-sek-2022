@@ -311,7 +311,6 @@ class Robot:
         motor.reset_angle(0)
         target_motor = self.motor_r if motor == self.motor_l else self.motor_l
         target_motor.run_target(100, -220 + degrees)
-        # self.pid_line_grabber(50, 3000, sensor_color)
         self.line_grabber(vel=20, time=3000, sensor=sensor_color)
 
     def move_both_to_target(
@@ -752,10 +751,9 @@ class Robot:
         num_reads = 10
         wrong_read_perc = 0.5
         color_count_perc = 0.5
+        if array is None:
+            array = []
         while True:
-            if array is None:
-                array = []
-            valid_colors = [Color.YELLOW, Color.BLUE, Color.RED]
 
             sign = 1 if sensor == self.color_l else -1
             if (
@@ -772,7 +770,8 @@ class Robot:
             if len(color_reads) == num_reads:
                 black_count_perc = (color_reads.count(Color.BLACK)) / num_reads
                 white_count_perc = (color_reads.count(Color.WHITE)) / num_reads
-                wrong_read_perc = black_count_perc + white_count_perc
+                green_count_perc = (color_reads.count(Color.GREEN)) / num_reads
+                wrong_read_perc = black_count_perc + white_count_perc + green_count_perc
                 color_count_perc = 1 - wrong_read_perc
                 all_color_reads.extend(color_reads)
                 color_reads.clear()
@@ -781,7 +780,7 @@ class Robot:
             self.motor_l.dc(vel - (vel * color_count_perc * left_multiplier * sign))
 
             # if color_read not in array and color_read in valid_colors:
-            if len(all_color_reads) > 100:
+            if len(all_color_reads) > 50:
                 y_count = all_color_reads.count(Color.YELLOW)
                 r_count = all_color_reads.count(Color.RED)
                 b_count = all_color_reads.count(Color.BLUE)
@@ -797,7 +796,7 @@ class Robot:
                         array.append(Color.BLUE)
                 all_color_reads.clear()
 
-            if break_color is "None":
+            if break_color == "None" and sensor == self.color_l:
                 if len(array) >= 2:
                     break
             else:
@@ -1358,7 +1357,27 @@ class Robot:
 
     def get_average_reading(self, sensor_func, num_reads=100):
         measures = []
-        for i in range(num_reads):
+        for _ in range(num_reads):
             measures.append(sensor_func())
         mean = sum(measures) / len(measures)
         return mean
+
+    def move_until_end_of_duct(self, speed = 25, inverted = False, num_reads = 200):
+        print("Moving until end of duct")
+        sign = 1 if not inverted else -1
+        while self.get_average_reading(self.ultra_front.distance, num_reads=num_reads) < const.DUCT_ENDS_US_DIFF:
+            self.motor_l.dc(sign*speed)
+            self.motor_r.dc(sign*-speed)
+        self.off_motors()
+
+    def move_until_beginning_of_duct(self, speed = 25, inverted = False, num_reads = 200):
+        print("Moving until beginning of duct")
+        sign = 1 if not inverted else -1
+        while self.get_average_reading(self.ultra_front.distance, num_reads=num_reads) > const.DUCT_ENDS_US_DIFF :
+            self.motor_l.dc(sign*speed)
+            self.motor_r.dc(sign*-speed)
+        self.off_motors()
+
+    def reset_both_motor_angles(self):
+        self.motor_l.reset_angle(0)
+        self.motor_r.reset_angle(0)
