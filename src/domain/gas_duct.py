@@ -22,10 +22,24 @@ def gas_duct_routine(robot: Robot, delivery=None):
         wall_flw_value = robot.pid_wall_follower(front_sensor=robot.ultra_front)
         if wall_flw_value == 1:
             # Curva pra dentro ou buraco
-            robot.simple_walk(1, 30)
+            # robot.simple_walk(1, 30)
 
-            if check_small_gap(robot):
-                continue
+            initial_motor_l = robot.motor_l.angle()
+            initial_motor_r = robot.motor_r.angle()
+            while robot.infra_side.distance() < const.WALL_SEEN_DIST and (
+                abs(robot.motor_l.angle() - initial_motor_l)
+                < robot.cm_to_motor_degrees(3)
+                and abs(robot.motor_r.angle() - initial_motor_r)
+                < robot.cm_to_motor_degrees(3)
+            ):
+                robot.brick.light.on(Color.ORANGE)
+                robot.motor_l.dc(30)
+                robot.motor_r.dc(30)
+            robot.off_motors()
+            robot.brick.light.off()
+
+            # if check_small_gap(robot):
+            #     continue
 
             if check_hole(robot):
                 # buraco
@@ -44,6 +58,8 @@ def gas_duct_routine(robot: Robot, delivery=None):
                             delivery = None
                     else:
                         return measured_value
+                else:
+                    robot.pid_walk(3, 60)
             else:
                 # curva pra dentro
                 duct_follower_turn_routine(robot)
@@ -56,7 +72,7 @@ def gas_duct_routine(robot: Robot, delivery=None):
         else:
             # Chegou na borda do mapa
             break
-        robot.min_aligner(min_function=robot.infra_side.distance)
+        robot.min_aligner(min_function=robot.infra_side.distance, motor_correction=0.5)
     if wall_flw_value == 3:
         armagedon_the_end_of_times(robot)
     robot.off_motors()
@@ -97,7 +113,7 @@ def check_small_gap(robot: Robot):
     """Confere se é um buraco pequeno no gasoduto. Retorna True caso seja."""
     robot.simple_walk(const.GAS_DUCT_SMALL_GAP, 30)
     duct_seen = robot.infra_side.distance() <= const.WALL_SEEN_DIST
-    robot.simple_walk(const.GAS_DUCT_SMALL_GAP, -30)
+    robot.simple_walk(const.GAS_DUCT_SMALL_GAP / 2, -30)
     return duct_seen
 
 
@@ -109,7 +125,7 @@ def duct_measure_hole(robot: Robot):
         # se está vendo o buraco, ré até deixar de ver
         robot.walk_to_hole(mode=1)
         robot.ev3_print("dbg: 2")
-        robot.pid_walk(cm=5, vel=-60)
+        robot.pid_walk(cm=5, vel=60)
 
         robot.ev3_print("dbg: 3")
         if robot.infra_side.distance() < const.WALL_SEEN_DIST:
