@@ -38,8 +38,8 @@ def gas_duct_routine(robot: Robot, delivery=None):
             robot.off_motors()
             robot.brick.light.off()
 
-            # if check_small_gap(robot):
-            #     continue
+            if check_small_gap(robot):
+                continue
 
             if check_hole(robot):
                 # buraco
