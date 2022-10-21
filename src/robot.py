@@ -683,7 +683,7 @@ class Robot:
                 vel - (vel * color_count_perc * left_multiplier * sign),
             )
 
-            motor_mean = (self.motor_l.angle() + self.motor_r.angle())/2
+            motor_mean = (self.motor_l.angle() + self.motor_r.angle()) / 2
 
             if color_read == "None":
                 self.off_motors()
@@ -812,9 +812,6 @@ class Robot:
 
         return array
 
-
-
-
     def min_aligner(
         self,
         min_function,
@@ -850,6 +847,13 @@ class Robot:
             if read[0] in range(min_read, min_read + acceptable_range + 1)
         ]
 
+        # self.ev3_print(
+        #     "=========", min_read, min_read + acceptable_range + 1, "========="
+        # )
+        # for read in close_reads:
+        #     self.ev3_print("CLOSE MN ALGN:", read)
+        # self.ev3_print("==================")
+
         motor_r_mean = sum(motor_r_angle for _, motor_r_angle, _ in close_reads) / len(
             close_reads
         )
@@ -869,14 +873,18 @@ class Robot:
             ki=0.001,
             kd=0.5,
         ),
+        max_cm=None,
     ):
         """Seguidor de parede com controle PID simples."""
-        # self.ev3_print(self.pid_wall_follower.__name__)
+        self.ev3_print(self.pid_wall_follower.__name__)
 
         if front_sensor is None:
             front_sensor = self.ultra_front
 
         initial_time = self.stopwatch.time()
+
+        initial_angle_r = self.motor_r.angle()
+        initial_angle_l = self.motor_l.angle()
 
         motor_error_i = 0
         prev_motor_error = 0
@@ -910,7 +918,7 @@ class Robot:
             # self.ev3_print("WLFLW t:", self.stopwatch.time() - initial_time)
 
             # Condições de parada
-            if self.infra_side.distance() == 0:
+            if side_dist >= 5 and self.infra_side.distance() == 0:
                 self.brick.speaker.beep(700)
                 self.brick.speaker.beep(100)
                 return_value = 4
@@ -922,6 +930,22 @@ class Robot:
                     self.stopwatch.time() - initial_time
                     > const.WALL_FOLLOWER_THRESHOLD_TIME
                 )
+            ):
+                return_value = 1
+                break
+
+            if max_cm is not None:
+                self.ev3_print(
+                    "MAX_CM_WLL:",
+                    abs(self.motor_l.angle() - initial_angle_l),
+                    abs(self.motor_r.angle() - initial_angle_r),
+                )
+
+            if max_cm is not None and (
+                abs(self.motor_l.angle() - initial_angle_l)
+                > self.cm_to_motor_degrees(max_cm)
+                and abs(self.motor_r.angle() - initial_angle_r)
+                > self.cm_to_motor_degrees(max_cm)
             ):
                 return_value = 1
                 break
@@ -1388,7 +1412,7 @@ class Robot:
 
             self.motor_r.dc(vel + (vel * wrong_read_perc * right_multiplier * sign))
             self.motor_l.dc(vel - (vel * color_count_perc * left_multiplier * sign))
-        
+
         self.off_motors()
 
     def get_average_reading(self, sensor_func, num_reads=100):
@@ -1398,7 +1422,7 @@ class Robot:
         mean = sum(measures) / len(measures)
         return mean
 
-    def move_until_end_of_duct(self, speed = 25, inverted = False, num_reads = 50):
+    def move_until_end_of_duct(self, speed=25, inverted=False, num_reads=50):
         print("Moving until end of duct")
         sign = 1 if not inverted else -1
         while (
@@ -1409,22 +1433,28 @@ class Robot:
             self.motor_r.dc(sign * -speed)
         self.off_motors()
 
-    def move_until_beginning_of_duct(self, speed = 25, inverted = False, num_reads = 100, time_limit = 5000):
+    def move_until_beginning_of_duct(
+        self, speed=25, inverted=False, num_reads=100, time_limit=5000
+    ):
         print("Moving until beginning of duct")
         self.stopwatch.reset()
         motor_mean = 0
         sign = 1 if not inverted else -1
-        while self.get_average_reading(self.ultra_front.distance, num_reads=num_reads) > const.DUCT_ENDS_US_DIFF and self.stopwatch.time() < time_limit and motor_mean < 150:
-            self.motor_l.dc(sign*speed)
-            self.motor_r.dc(sign*-speed)
-            motor_mean = (abs(self.motor_l.angle()) + abs(self.motor_r.angle()))/2
+        while (
+            self.get_average_reading(self.ultra_front.distance, num_reads=num_reads)
+            > const.DUCT_ENDS_US_DIFF
+            and self.stopwatch.time() < time_limit
+            and motor_mean < 150
+        ):
+            self.motor_l.dc(sign * speed)
+            self.motor_r.dc(sign * -speed)
+            motor_mean = (abs(self.motor_l.angle()) + abs(self.motor_r.angle())) / 2
         self.off_motors()
 
     def reset_both_motor_angles(self):
         self.motor_l.reset_angle(0)
         self.motor_r.reset_angle(0)
 
-        
     def black_line_alignment_routine(self):
         self.forward_while_same_reflection(speed_r=-40, speed_l=-40)
         self.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))

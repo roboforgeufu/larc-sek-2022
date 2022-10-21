@@ -182,6 +182,7 @@ def land_main(toph: Robot):
 def water_main(katara: Robot):
     """Main da Katara"""
     # conexao entre os bricks por bluetooth
+    katara.motor_claw.run_target(300, const.CLAW_UP, wait=False)
     katara.ev3_print(get_hostname())
     client = BluetoothMailboxClient()
     katara.ev3_print("CLIENT: establishing connection...")
@@ -259,7 +260,7 @@ def test_toph():
         toph.motor_claw.run_target(300, -20)
         wait_button_pressed(toph.brick)
 
-#############################################################################
+    #############################################################################
 
     # # algoritmo de localizacao terrestre
     # color_order = land_position_routine(toph)
@@ -283,14 +284,14 @@ def test_toph():
     # # termina de frente para a linha preta
 
     # dutos subsequentes (comunicação bluetooth)
-    color_order = [Color.BLUE,Color.YELLOW,Color.RED,"None"]
+    color_order = [Color.BLUE, Color.YELLOW, Color.RED, "None"]
     while True:
 
-        #alinha com a linha preta
+        # alinha com a linha preta
         toph.certify_line_alignment_routine(
             target_color=Color.BLACK, sensor_color=toph.color_l, motor=toph.motor_l
         )
-        toph.pid_walk(cm=15,vel=-30)
+        toph.pid_walk(cm=15, vel=-30)
         num = 10
 
         if num == 10:
@@ -307,7 +308,6 @@ def test_toph():
         return_to_idle_position(toph)
         wait_button_pressed(toph.brick)
         toph.pid_walk(cm=7, vel=-60)
-    
 
 
 def test_katara():
@@ -438,6 +438,33 @@ def color_guessing():
             normalize_color(robot.color_r.rgb()),
         )
         wait(100)
+
+
+def test_min_aligner_calibration():
+    katara = Robot(
+        wheel_diameter=const.WHEEL_DIAMETER,
+        wheel_distance=const.WHEEL_DIST,
+        motor_r=Port.C,
+        motor_l=Port.B,
+        motor_claw=Port.A,
+        motor_sensor=Port.D,
+        color_l=Port.S1,
+        color_r=Port.S2,
+        infra_side=Port.S3,
+        ultra_front=Port.S4,
+        debug=True,
+        turn_correction=const.KATARA_TURN_CORRECTION,
+    )
+
+    while True:
+        katara.min_aligner(
+            min_function=katara.ultra_front.distance,
+            motor_correction=const.KATARA_MIN_ALGN_CORRECTION,
+            acceptable_range=80,
+        )
+        katara.ev3_print(katara.ultra_front.distance())
+        katara.brick.speaker.beep()
+        wait(500)
 
 
 if __name__ == "__main__":
