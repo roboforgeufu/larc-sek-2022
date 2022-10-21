@@ -177,7 +177,7 @@ def duct_seek_routine_new(robot: Robot, color):
 
     line_grabber_distance_cm = 0
     if color != "None":
-        line_grabber_distance = robot.line_grabber(vel=20, time=3000, sensor=robot.color_l)
+        line_grabber_distance = robot.line_grabber(vel=20, time=3000, sensor=robot.color_l, multiplier = 0.8)
         line_grabber_distance_cm = (line_grabber_distance / 360) * const.WHEEL_LENGTH
 
     else:
@@ -190,7 +190,7 @@ def duct_seek_routine_new(robot: Robot, color):
 
     robot.pid_walk(cm=(distance_result), vel=-40)
     robot.pid_turn(-90)
-    robot.pid_walk(cm=5, vel=-50)
+    robot.pid_walk(cm=10, vel=-50)
     robot.forward_while_same_reflection()
     robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
 

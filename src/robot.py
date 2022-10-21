@@ -648,7 +648,7 @@ class Robot:
                 break
         self.off_motors()
 
-    def line_grabber(self, sensor, time, vel=20):
+    def line_grabber(self, sensor, time, vel=20, multiplier = 1.5):
         color_reads = []
         num_reads = 10
         wrong_read_perc = 0.5
@@ -667,8 +667,8 @@ class Robot:
 
             color_read = self.accurate_color(sensor.rgb())
             color_reads.append(color_read)
-            left_multiplier = 1.5
-            right_multiplier = 1.5
+            left_multiplier = multiplier
+            right_multiplier = multiplier
             if len(color_reads) == num_reads:
                 black_count_perc = (color_reads.count(Color.BLACK)) / num_reads
                 white_count_perc = (color_reads.count(Color.WHITE)) / num_reads
