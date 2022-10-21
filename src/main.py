@@ -44,6 +44,7 @@ from domain.gas_duct import (
     duct_get,
     duct_measure_hole,
     gas_duct_routine,
+    too_close_maneuver,
 )
 from domain.localization import (
     back_from_water_routine,
@@ -153,11 +154,11 @@ def land_main(toph: Robot):
     numeric_mbox = NumericMailbox("measures", server)
     while True:
 
-        #alinha com a linha preta
+        # alinha com a linha preta
         toph.certify_line_alignment_routine(
             target_color=Color.BLACK, sensor_color=toph.color_l, motor=toph.motor_l
         )
-        toph.pid_walk(cm=15,vel=-30)
+        toph.pid_walk(cm=15, vel=-30)
         numeric_mbox.wait()
         num = numeric_mbox.read()
 
@@ -219,6 +220,10 @@ def water_main(katara: Robot):
 
         back_from_water_routine(katara)
         duct_get(katara)
+
+        # Libera toph
+        numeric_mbox.send(0)
+
         back_to_water_routine1(katara)
         back_to_water_routine2(katara)
         delivery = measured_value
@@ -239,8 +244,8 @@ def test_toph():
         color_max_value=110,
         debug=True,
     )
-    
-    toph.pid_walk(cm=15,vel=-30)
+
+    toph.pid_walk(cm=15, vel=-30)
     wait_button_pressed(toph.brick)
 
     while True:
