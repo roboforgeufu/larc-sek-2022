@@ -248,17 +248,40 @@ def test_toph():
         debug=True,
     )
 
-    while True:
-        duct_ends(toph)
-        wait_button_pressed(toph.brick)
-        toph.pid_walk(cm=12, vel=20)
-        toph.off_motors()
-        wait_button_pressed(toph.brick)
-        toph.motor_claw.reset_angle(0)
-        toph.motor_claw.run_target(300, const.CLAW_UP)
-        wait_button_pressed(toph.brick)
-        toph.motor_claw.run_target(300, -20)
-        wait_button_pressed(toph.brick)
+     # garante o meio do duto
+    line_grabber_correction = toph.line_grabber(vel=20, time=3000, sensor=toph.color_l)
+    line_grabber_correction_cm = (line_grabber_correction / 360) * const.WHEEL_LENGTH
+    print(line_grabber_correction_cm)
+    toph.pid_walk(cm=line_grabber_correction_cm, vel=-30)
+    toph.walk_to_hole(vel=30, mode=4)
+    toph.walk_to_hole(vel=30, mode=3)
+    duct_length = toph.duct_measurement_new(vel=30, color_check_sensor=toph.color_l, multiplier=0.5)
+
+    if(duct_length < 15):
+        duct_length = 10
+        duct_correction = 1.3
+    elif(duct_length < 20):
+        duct_length = 15
+        duct_correction = 1.225
+    else:
+        duct_length = 20
+        duct_correction = 1.15
+
+    toph.walk_to_hole(vel=30, mode=1)
+    toph.pid_walk(cm=((duct_length*duct_correction)/2), vel=-30)
+
+
+    # while True:
+    #     duct_ends(toph)
+    #     wait_button_pressed(toph.brick)
+    #     toph.pid_walk(cm=12, vel=20)
+    #     toph.off_motors()
+    #     wait_button_pressed(toph.brick)
+    #     toph.motor_claw.reset_angle(0)
+    #     toph.motor_claw.run_target(300, const.CLAW_UP)
+    #     wait_button_pressed(toph.brick)
+    #     toph.motor_claw.run_target(300, -20)
+    #     wait_button_pressed(toph.brick)
 
     #############################################################################
 
@@ -468,4 +491,4 @@ def test_min_aligner_calibration():
 
 
 if __name__ == "__main__":
-    main()
+    test_toph()
