@@ -507,7 +507,7 @@ class Robot:
         self.stopwatch.reset()
 
         while abs(motor_angle_average) < abs(degrees):
-            motor_angle_average = (self.motor_l.angle() + self.motor_r.angle()) / 2
+            motor_angle_average = self.get_motor_mean()
             prev_error = error
             error = self.motor_r.angle() - self.motor_l.angle()
             p_share = error * pid.kp
@@ -683,7 +683,7 @@ class Robot:
                 vel - (vel * color_count_perc * left_multiplier * sign),
             )
 
-            motor_mean = (self.motor_l.angle() + self.motor_r.angle())/2
+            motor_mean = self.get_motor_mean()
 
             if color_read == "None":
                 self.off_motors()
@@ -811,9 +811,6 @@ class Robot:
         self.off_motors()
 
         return array
-
-
-
 
     def min_aligner(
         self,
@@ -1073,7 +1070,7 @@ class Robot:
         WHEEL_LENGTH = (
             const.WHEEL_DIAMETER * math.pi
         )  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
-        degrees = (self.motor_l.angle() + self.motor_r.angle()) / 2
+        degrees = self.get_motor_mean()
         return (degrees / 360) * WHEEL_LENGTH
 
     def duct_measurement(
@@ -1124,7 +1121,7 @@ class Robot:
         WHEEL_LENGTH = (
             const.WHEEL_DIAMETER * math.pi
         )  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
-        degrees = (self.motor_l.angle() + self.motor_r.angle()) / 2
+        degrees = self.get_motor_mean()
         # erro medio de medida -> 80 graus
         print(degrees)
         return (degrees / 360) * WHEEL_LENGTH
@@ -1172,7 +1169,7 @@ class Robot:
         WHEEL_LENGTH = (
             const.WHEEL_DIAMETER * math.pi
         )  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
-        degrees = (self.motor_l.angle() + self.motor_r.angle()) / 2
+        degrees = self.get_motor_mean()
         # erro medio de medida -> 80 graus
         # print(degrees)
         return (degrees / 360) * WHEEL_LENGTH
@@ -1388,7 +1385,7 @@ class Robot:
 
             self.motor_r.dc(vel + (vel * wrong_read_perc * right_multiplier * sign))
             self.motor_l.dc(vel - (vel * color_count_perc * left_multiplier * sign))
-        
+
         self.off_motors()
 
     def get_average_reading(self, sensor_func, num_reads=100):
@@ -1398,7 +1395,7 @@ class Robot:
         mean = sum(measures) / len(measures)
         return mean
 
-    def move_until_end_of_duct(self, speed = 25, inverted = False, num_reads = 50):
+    def move_until_end_of_duct(self, speed=25, inverted=False, num_reads=50):
         print("Moving until end of duct")
         sign = 1 if not inverted else -1
         while (
@@ -1409,22 +1406,31 @@ class Robot:
             self.motor_r.dc(sign * -speed)
         self.off_motors()
 
-    def move_until_beginning_of_duct(self, speed = 25, inverted = False, num_reads = 100, time_limit = 5000):
+    def move_until_beginning_of_duct(
+        self, speed=25, inverted=False, num_reads=100, time_limit=5000
+    ):
         print("Moving until beginning of duct")
         self.stopwatch.reset()
         motor_mean = 0
         sign = 1 if not inverted else -1
-        while self.get_average_reading(self.ultra_front.distance, num_reads=num_reads) > const.DUCT_ENDS_US_DIFF and self.stopwatch.time() < time_limit and motor_mean < 150:
-            self.motor_l.dc(sign*speed)
-            self.motor_r.dc(sign*-speed)
-            motor_mean = (abs(self.motor_l.angle()) + abs(self.motor_r.angle()))/2
+        while (
+            self.get_average_reading(self.ultra_front.distance, num_reads=num_reads)
+            > const.DUCT_ENDS_US_DIFF
+            and self.stopwatch.time() < time_limit
+            and motor_mean < 150
+        ):
+            self.motor_l.dc(sign * speed)
+            self.motor_r.dc(sign * -speed)
+            motor_mean = (abs(self.motor_l.angle()) + abs(self.motor_r.angle())) / 2
         self.off_motors()
 
     def reset_both_motor_angles(self):
         self.motor_l.reset_angle(0)
         self.motor_r.reset_angle(0)
 
-        
+    def get_motor_mean(self):
+        return (self.motor_l.angle() + self.motor_r.angle()) / 2
+
     def black_line_alignment_routine(self):
         self.forward_while_same_reflection(speed_r=-40, speed_l=-40)
         self.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))

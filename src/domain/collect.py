@@ -65,10 +65,12 @@ def duct_ends(
     robot.reset_both_motor_angles()
     robot.move_until_beginning_of_duct(inverted=True)
     robot.move_until_end_of_duct(inverted=True)
-    
+
     limiter = 1.1
-    motor_correction = ((abs(robot.motor_l.angle()) + abs(robot.motor_l.angle())) / 4)*limiter
-    robot.move_both_to_target(target_l=-motor_correction,target_r=motor_correction)
+    motor_correction = (
+        (abs(robot.motor_l.angle()) + abs(robot.motor_l.angle())) / 4
+    ) * limiter
+    robot.move_both_to_target(target_l=-motor_correction, target_r=motor_correction)
     robot.off_motors()
 
 
@@ -93,6 +95,7 @@ def align_duct_center(robot: Robot):
 
     avg = (first_dist + second_dist) / 2
     robot.move_to_distance(distance=avg)
+
 
 def find_duct(robot: Robot):
     """encontra a menor distância num arco de 90º na frente do robô"""
@@ -122,7 +125,9 @@ def find_duct(robot: Robot):
             robot.off_motors()
             return False, 0
 
+
 #########################
+
 
 def duct_seek_routine_new(robot: Robot, color):
 
@@ -135,17 +140,19 @@ def duct_seek_routine_new(robot: Robot, color):
 
         robot.brick.light.on(Color.ORANGE)
         robot.walk_till_duct(color_check_color=color, color_check_sensor=robot.color_l)
-        
+
         robot.brick.light.off()
         robot.brick.speaker.beep()
 
-        motor_mean = (robot.motor_l.angle() + robot.motor_r.angle()) / 2
+        motor_mean = robot.get_motor_mean()
         degrees = motor_mean
         travelled_distance = travelled_distance + degrees
         robot.brick.light.on(Color.RED)
 
-        duct_length = robot.duct_measurement_new(color_check_color=color, color_check_sensor=robot.color_l)
-        
+        duct_length = robot.duct_measurement_new(
+            color_check_color=color, color_check_sensor=robot.color_l
+        )
+
         robot.brick.light.off()
         robot.brick.speaker.beep()
 
@@ -159,7 +166,6 @@ def duct_seek_routine_new(robot: Robot, color):
             (duct_length * 360) / const.WHEEL_LENGTH
         )
         robot.off_motors()
-
 
     robot.off_motors()
 
@@ -177,16 +183,23 @@ def duct_seek_routine_new(robot: Robot, color):
 
     line_grabber_distance_cm = 0
     if color != "None":
-        line_grabber_distance = robot.line_grabber(vel=20, time=3000, sensor=robot.color_l)
+        line_grabber_distance = robot.line_grabber(
+            vel=20, time=3000, sensor=robot.color_l
+        )
         line_grabber_distance_cm = (line_grabber_distance / 360) * const.WHEEL_LENGTH
 
     else:
-        robot.pid_walk(cm=3,vel=-70)
+        robot.pid_walk(cm=3, vel=-70)
         robot.forward_while_same_reflection()
 
     distance_correction = 1.5
-    distance_result = travelled_distance_cm + line_grabber_distance_cm + distance_correction - optimal_motor_choice
-    print(line_grabber_distance_cm,distance_result)
+    distance_result = (
+        travelled_distance_cm
+        + line_grabber_distance_cm
+        + distance_correction
+        - optimal_motor_choice
+    )
+    print(line_grabber_distance_cm, distance_result)
 
     robot.pid_walk(cm=(distance_result), vel=-40)
     robot.pid_turn(-90)
@@ -207,6 +220,7 @@ def duct_seek_routine_new(robot: Robot, color):
     robot.black_line_alignment_routine()
     robot.leaves_duct_at_correct_place()
 
+
 def return_to_idle_position(robot: Robot):
     # alinha com o buraco restaurando a posicao inicial
     robot.pid_walk(cm=5, vel=-60)
@@ -219,5 +233,3 @@ def return_to_idle_position(robot: Robot):
     robot.pid_walk(cm=5, vel=-60)
     robot.forward_while_same_reflection()
     robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
-    
-
