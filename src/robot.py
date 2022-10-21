@@ -488,11 +488,6 @@ class Robot:
         self,
         cm,
         vel=80,
-        pid: PIDValues = PIDValues(
-            kp=3,
-            ki=0.2,
-            kd=8,
-        ),
     ):
         """Anda em linha reta com controle PID entre os motores."""
 
@@ -508,26 +503,47 @@ class Robot:
 
         while abs(motor_angle_average) < abs(degrees):
             motor_angle_average = (self.motor_l.angle() + self.motor_r.angle()) / 2
-            prev_error = error
-            error = self.motor_r.angle() - self.motor_l.angle()
-            p_share = error * pid.kp
 
-            if abs(error) < 3:
-                i_share = i_share + (error * pid.ki)
-
-            prev_elapsed_time = elapsed_time
-            wait(1)
-            elapsed_time = self.stopwatch.time()
-
-            d_share = ((error - prev_error) * pid.kd) / (
-                elapsed_time - prev_elapsed_time
+            elapsed_time, i_share, error = self.loopless_pid_walk(
+                elapsed_time, i_share, error, vel=vel
             )
 
-            pid_correction = p_share + i_share + d_share
-            self.motor_r.dc(vel - pid_correction)
-            self.motor_l.dc(vel + pid_correction)
-
         self.off_motors()
+
+    def loopless_pid_walk(
+        self,
+        prev_elapsed_time=0,
+        i_share=0,
+        prev_error=0,
+        vel=80,
+        pid: PIDValues = PIDValues(
+            kp=3,
+            ki=0.2,
+            kd=8,
+        ),
+    ):
+        """
+        Controle PID entre os motores sem um loop específico.
+        Feita pra ser colocada dentro de um loop em outra função, passando os
+        novos parâmetros (prev_elapsed_time, i_share, prev_error) devidamente
+        inicializados a cada iteração.
+        """
+        error = self.motor_r.angle() - self.motor_l.angle()
+        p_share = error * pid.kp
+
+        if abs(error) < 3:
+            i_share = i_share + (error * pid.ki)
+
+        wait(1)
+        elapsed_time = self.stopwatch.time()
+
+        d_share = ((error - prev_error) * pid.kd) / (elapsed_time - prev_elapsed_time)
+
+        pid_correction = p_share + i_share + d_share
+        self.motor_r.dc(vel - pid_correction)
+        self.motor_l.dc(vel + pid_correction)
+
+        return (elapsed_time, i_share, error)
 
     def pid_accelerated_walk(
         self,

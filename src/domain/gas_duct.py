@@ -78,7 +78,7 @@ def duct_follower_turn_routine(robot: Robot, speed=const.SEARCH_WALL_SPEED):
     robot.brick.speaker.beep(250)
     robot.brick.speaker.beep(150)
     # wait_button_pressed(robot.brick)
-    robot.pid_walk(10, vel=40)
+    robot.pid_walk(13, vel=40)
     robot.simple_turn(90, speed=40)
 
     robot.ev3_print("infra_side:", robot.infra_side.distance())
