@@ -9,6 +9,8 @@ from utils import wait_button_pressed
 
 
 def gas_duct_routine(robot: Robot, delivery=None):
+    turn_counter = 1
+
     robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
     robot.pid_walk(10, -40)
     robot.pid_turn(-90)
@@ -17,16 +19,18 @@ def gas_duct_routine(robot: Robot, delivery=None):
     robot.pid_turn(-90)
 
     while True:
-        robot.min_aligner(
-            min_function=robot.infra_side.distance,
-            motor_correction=0.5,
-        )
-        wall_flw_value = robot.pid_wall_follower(front_sensor=robot.ultra_front)
+        if robot.infra_side.distance() < const.WALL_SEEN_DIST:
+            robot.min_aligner(
+                min_function=robot.infra_side.distance,
+                motor_correction=0.3,
+            )
+            wall_flw_value = robot.pid_wall_follower(front_sensor=robot.ultra_front)
+        else:
+            wall_flw_value = 1
         robot.ev3_print("WFLWVL:", wall_flw_value)
         if wall_flw_value == 1:
             # Curva pra dentro ou buraco
-            robot.pid_walk(2, 30)
-
+            robot.pid_walk(4, 30)
             check_small_gap(robot)
 
             if check_hole(robot):
@@ -45,27 +49,28 @@ def gas_duct_routine(robot: Robot, delivery=None):
                             duct_deliver(robot, measured_value)
                             delivery = None
                     else:
-                        return measured_value
+                        return measured_value, turn_counter
                 else:
                     robot.pid_walk(3, 60)
             else:
                 # curva pra dentro
+                turn_counter += 1
                 duct_follower_turn_routine(robot)
         elif wall_flw_value == 2:
             # Curva pra fora
+            turn_counter -= 1
             robot.move_to_distance(
                 const.WALL_FOLLOWER_FRONT_DIST, sensor=robot.ultra_front
             )
             robot.pid_turn(-90)
         elif wall_flw_value == 3:
+            # Chegou na borda do mapa
+            robot.off_motors()
+            armagedon_the_end_of_times(robot)
+            break
+        else:
             # Perto demais, afasta
             too_close_maneuver(robot)
-        else:
-            # Chegou na borda do mapa
-            break
-    if wall_flw_value == 3:
-        armagedon_the_end_of_times(robot)
-    robot.off_motors()
 
 
 def duct_follower_turn_routine(robot: Robot, speed=const.SEARCH_WALL_SPEED):
@@ -113,7 +118,7 @@ def check_small_gap(robot: Robot):
         and abs(robot.motor_r.angle() - initial_motor_r)
         < robot.cm_to_motor_degrees(const.GAS_DUCT_SMALL_GAP)
     ):
-        robot.ev3_print("CK_SMLGAP:", robot.infra_side.distance())
+        # robot.ev3_print("CK_SMLGAP:", robot.infra_side.distance())
         robot.motor_l.dc(30)
         robot.motor_r.dc(30)
     robot.off_motors()

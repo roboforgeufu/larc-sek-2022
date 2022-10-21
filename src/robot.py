@@ -863,7 +863,7 @@ class Robot:
         pid: PIDValues = PIDValues(
             kp=0.8,
             ki=0.001,
-            kd=1,
+            kd=0.5,
         ),
     ):
         """Seguidor de parede com controle PID simples."""
@@ -896,13 +896,14 @@ class Robot:
 
             # self.ev3_print("IR dff:", dist_diff, "|", motor_error)
 
-            # self.ev3_print(
-            #     motor_error,
-            #     motor_error_i,
-            #     motor_error_d,
-            # )
+            self.ev3_print(
+                "PID_WLL:",
+                motor_error,
+                motor_error_i,
+                motor_error_d,
+            )
 
-            self.ev3_print("WLFLW t:", self.stopwatch.time() - initial_time)
+            # self.ev3_print("WLFLW t:", self.stopwatch.time() - initial_time)
 
             # Condições de parada
             if self.infra_side.distance() == 0:
@@ -980,6 +981,8 @@ class Robot:
         initial_degrees_l = self.motor_l.angle()
         initial_degrees_r = self.motor_r.angle()
 
+        initial_time = self.stopwatch.time()
+
         diff = sensor.distance() - distance
         diff_i = 0
         prev_diff = diff
@@ -1009,10 +1012,14 @@ class Robot:
             ):
                 break
 
+            # self.ev3_print("MV_DIST:", self.motor_l.speed(), self.motor_r.speed())
             if (
                 abs(self.motor_l.speed()) < const.PID_TURN_MIN_SPEED
                 and abs(self.motor_r.speed()) < const.PID_TURN_MIN_SPEED
-                and abs(diff) < const.MV_TO_DIST_THRESHOLD
+                and (
+                    self.stopwatch.time() - initial_time
+                    > const.MV_TO_DIST_THRESHOLD_TIME
+                )
             ):
                 break
 
