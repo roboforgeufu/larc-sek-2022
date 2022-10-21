@@ -66,7 +66,7 @@ def duct_ends(
     robot.move_until_end_of_duct(inverted=True)
 
     motor_correction = (abs(robot.motor_l.angle()) + abs(robot.motor_l.angle())) / 4
-    robot.move_both_to_target(target_l=-motor_correction,target_r=motor_correction)
+    robot.move_both_to_target(target_l=-motor_correction, target_r=motor_correction)
     robot.off_motors()
 
 
@@ -91,6 +91,7 @@ def align_duct_center(robot: Robot):
 
     avg = (first_dist + second_dist) / 2
     robot.move_to_distance(distance=avg)
+
 
 def find_duct(robot: Robot):
     """encontra a menor distância num arco de 90º na frente do robô"""
@@ -120,7 +121,9 @@ def find_duct(robot: Robot):
             robot.off_motors()
             return False, 0
 
+
 #########################
+
 
 def duct_seek_routine_new(robot: Robot, color):
 
@@ -133,17 +136,19 @@ def duct_seek_routine_new(robot: Robot, color):
 
         robot.brick.light.on(Color.ORANGE)
         robot.walk_till_duct(color_check_color=color, color_check_sensor=robot.color_l)
-        
+
         robot.brick.light.off()
         robot.brick.speaker.beep()
 
-        motor_mean = (robot.motor_l.angle() + robot.motor_r.angle()) / 2
+        motor_mean = robot.get_motor_mean()
         degrees = motor_mean
         travelled_distance = travelled_distance + degrees
         robot.brick.light.on(Color.RED)
 
-        duct_length = robot.duct_measurement_new(color_check_color=color, color_check_sensor=robot.color_l)
-        
+        duct_length = robot.duct_measurement_new(
+            color_check_color=color, color_check_sensor=robot.color_l
+        )
+
         robot.brick.light.off()
         robot.brick.speaker.beep()
 
@@ -208,6 +213,7 @@ def duct_seek_routine_new(robot: Robot, color):
     robot.pid_walk(cm=25, vel=-30)
     robot.motor_claw.run_target(300, -10)
 
+
 def return_to_idle_position(robot: Robot):
     # alinha com o buraco restaurando a posicao inicial
     robot.pid_walk(cm=5, vel=-60)
@@ -221,4 +227,3 @@ def return_to_idle_position(robot: Robot):
     robot.forward_while_same_reflection()
     robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
     robot.pid_walk(cm=7, vel=-60)
-

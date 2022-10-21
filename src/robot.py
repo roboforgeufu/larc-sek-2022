@@ -507,7 +507,7 @@ class Robot:
         self.stopwatch.reset()
 
         while abs(motor_angle_average) < abs(degrees):
-            motor_angle_average = (self.motor_l.angle() + self.motor_r.angle()) / 2
+            motor_angle_average = self.get_motor_mean()
             prev_error = error
             error = self.motor_r.angle() - self.motor_l.angle()
             p_share = error * pid.kp
@@ -1089,7 +1089,7 @@ class Robot:
         WHEEL_LENGTH = (
             const.WHEEL_DIAMETER * math.pi
         )  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
-        degrees = (self.motor_l.angle() + self.motor_r.angle()) / 2
+        degrees = self.get_motor_mean()
         # erro medio de medida -> 80 graus
         print(degrees)
         return (degrees / 360) * WHEEL_LENGTH
@@ -1138,7 +1138,7 @@ class Robot:
         WHEEL_LENGTH = (
             const.WHEEL_DIAMETER * math.pi
         )  # 360 graus = 1 rotacao; 1 rotacao = 17.3cm
-        degrees = (self.motor_l.angle() + self.motor_r.angle()) / 2
+        degrees = self.get_motor_mean()
         # erro medio de medida -> 80 graus
         # print(degrees)
         return (degrees / 360) * WHEEL_LENGTH
@@ -1362,22 +1362,31 @@ class Robot:
         mean = sum(measures) / len(measures)
         return mean
 
-    def move_until_end_of_duct(self, speed = 25, inverted = False, num_reads = 200):
+    def move_until_end_of_duct(self, speed=25, inverted=False, num_reads=200):
         print("Moving until end of duct")
         sign = 1 if not inverted else -1
-        while self.get_average_reading(self.ultra_front.distance, num_reads=num_reads) < const.DUCT_ENDS_US_DIFF:
-            self.motor_l.dc(sign*speed)
-            self.motor_r.dc(sign*-speed)
+        while (
+            self.get_average_reading(self.ultra_front.distance, num_reads=num_reads)
+            < const.DUCT_ENDS_US_DIFF
+        ):
+            self.motor_l.dc(sign * speed)
+            self.motor_r.dc(sign * -speed)
         self.off_motors()
 
-    def move_until_beginning_of_duct(self, speed = 25, inverted = False, num_reads = 200):
+    def move_until_beginning_of_duct(self, speed=25, inverted=False, num_reads=200):
         print("Moving until beginning of duct")
         sign = 1 if not inverted else -1
-        while self.get_average_reading(self.ultra_front.distance, num_reads=num_reads) > const.DUCT_ENDS_US_DIFF :
-            self.motor_l.dc(sign*speed)
-            self.motor_r.dc(sign*-speed)
+        while (
+            self.get_average_reading(self.ultra_front.distance, num_reads=num_reads)
+            > const.DUCT_ENDS_US_DIFF
+        ):
+            self.motor_l.dc(sign * speed)
+            self.motor_r.dc(sign * -speed)
         self.off_motors()
 
     def reset_both_motor_angles(self):
         self.motor_l.reset_angle(0)
         self.motor_r.reset_angle(0)
+
+    def get_motor_mean(self):
+        return (self.motor_l.angle() + self.motor_r.angle()) / 2
