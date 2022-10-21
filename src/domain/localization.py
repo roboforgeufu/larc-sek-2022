@@ -100,7 +100,7 @@ def land_position_routine(robot: Robot):
 
         if location == "RAMP":
 
-            robot.pid_accelerated_walk(-500, 3)
+            robot.pid_accelerated_walk(-500, 2)
             robot.pid_turn(180)
 
         elif location == "COLOR":
@@ -115,7 +115,7 @@ def land_position_routine(robot: Robot):
 
 
             robot.pid_accelerated_walk(-500, 2)
-            robot.pid_turn(150)
+            robot.pid_turn(165)
             robot.turn_till_color(
                 direction="right", sensor_color=robot.color_l, target_color=Color.BLACK
             )
@@ -123,7 +123,7 @@ def land_position_routine(robot: Robot):
             color_order = robot.line_follower_color_id(robot.color_l, array=color_order)
 
             robot.pid_accelerated_walk(-500, 2)
-            robot.pid_turn(-150)
+            robot.pid_turn(-165)
             robot.turn_till_color(
                 direction="left", sensor_color=robot.color_r, target_color=Color.BLACK
             )
@@ -133,11 +133,11 @@ def land_position_routine(robot: Robot):
             break
 
         elif location == "EDGE":
-            robot.pid_accelerated_walk(-500, 3)
+            robot.pid_accelerated_walk(-500, 2)
             robot.pid_turn(-90)
 
         else:
-            robot.pid_accelerated_walk(-500, 3)
+            robot.pid_accelerated_walk(-500, 2)
 
     return color_order
 

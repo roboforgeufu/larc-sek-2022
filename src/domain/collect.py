@@ -56,16 +56,18 @@ def duct_ends(
 
     robot.reset_both_motor_angles()
 
+    robot.move_until_beginning_of_duct()
+    robot.move_until_beginning_of_duct(inverted=True)
     #####
 
     robot.move_until_end_of_duct()
 
     robot.reset_both_motor_angles()
     robot.move_until_beginning_of_duct(inverted=True)
-
     robot.move_until_end_of_duct(inverted=True)
-
-    motor_correction = (abs(robot.motor_l.angle()) + abs(robot.motor_l.angle())) / 4
+    
+    limiter = 1.1
+    motor_correction = ((abs(robot.motor_l.angle()) + abs(robot.motor_l.angle())) / 4)*limiter
     robot.move_both_to_target(target_l=-motor_correction,target_r=motor_correction)
     robot.off_motors()
 
@@ -156,10 +158,11 @@ def duct_seek_routine_new(robot: Robot, color):
         travelled_distance = travelled_distance + (
             (duct_length * 360) / const.WHEEL_LENGTH
         )
-
         robot.off_motors()
 
+
     robot.off_motors()
+
     travelled_distance_cm = (travelled_distance / 360) * const.WHEEL_LENGTH
     print(measurements, travelled_distance_cm)
 
@@ -172,41 +175,37 @@ def duct_seek_routine_new(robot: Robot, color):
             found_idx = e
     print(optimal_motor_choice, measurements[found_idx])
 
-    robot.pid_walk(cm=(travelled_distance_cm - optimal_motor_choice), vel=-60)
+    line_grabber_distance_cm = 0
+    if color != "None":
+        line_grabber_distance = robot.line_grabber(vel=20, time=3000, sensor=robot.color_l)
+        line_grabber_distance_cm = (line_grabber_distance / 360) * const.WHEEL_LENGTH
+
+    else:
+        robot.pid_walk(cm=3,vel=-70)
+        robot.forward_while_same_reflection()
+
+    distance_correction = 1.5
+    distance_result = travelled_distance_cm + line_grabber_distance_cm + distance_correction - optimal_motor_choice
+    print(line_grabber_distance_cm,distance_result)
+
+    robot.pid_walk(cm=(distance_result), vel=-40)
     robot.pid_turn(-90)
-    robot.pid_walk(cm=2, vel=-50)
+    robot.pid_walk(cm=5, vel=-50)
     robot.forward_while_same_reflection()
     robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
-    ###REFATORAR, DAR UMA OLHADA
 
-    # recolhe o duto
+    ###REFATORAR, DAR UMA OLHADA
     dist = robot.ultra_front.distance()
     dist = max(1, dist - 5)
     robot.move_to_distance(50, sensor=robot.ultra_front, max_cm=35)
-    robot.min_aligner(robot.ultra_front.distance)
+    # robot.duct_ends() ###################################################################
     robot.pid_walk(cm=8, vel=20)
     robot.off_motors()
     robot.motor_claw.reset_angle(0)
     robot.motor_claw.run_target(300, const.CLAW_UP)
 
-    # alinha com a linha preta e o buraco para deixar o duto numa posição padrão
-    robot.forward_while_same_reflection(speed_r=-60, speed_l=-60)
-    robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
-    robot.pid_walk(cm=5, vel=-60)
-    robot.forward_while_same_reflection()
-    robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
-    robot.pid_walk(cm=20, vel=-60)
-    robot.pid_turn(-90)
-    robot.forward_while_same_reflection()
-    robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
-
-    # deixa o duto a 40cm do buraco e 17cm da linha
-    robot.pid_walk(cm=40, vel=-30)
-    robot.pid_turn(90)
-    robot.forward_while_same_reflection()
-    robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
-    robot.pid_walk(cm=25, vel=-30)
-    robot.motor_claw.run_target(300, -10)
+    robot.black_line_alignment_routine()
+    robot.leaves_duct_at_correct_place()
 
 def return_to_idle_position(robot: Robot):
     # alinha com o buraco restaurando a posicao inicial
@@ -220,5 +219,5 @@ def return_to_idle_position(robot: Robot):
     robot.pid_walk(cm=5, vel=-60)
     robot.forward_while_same_reflection()
     robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
-    robot.pid_walk(cm=7, vel=-60)
+    
 

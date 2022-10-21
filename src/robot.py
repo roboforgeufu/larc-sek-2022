@@ -654,6 +654,7 @@ class Robot:
         wrong_read_perc = 0.5
         color_count_perc = 0.5
         self.stopwatch.reset()
+        self.reset_both_motor_angles()
         while True:
 
             sign = 1 if sensor == self.color_l else -1
@@ -682,14 +683,15 @@ class Robot:
                 vel - (vel * color_count_perc * left_multiplier * sign),
             )
 
+            motor_mean = (self.motor_l.angle() + self.motor_r.angle())/2
+
             if color_read == "None":
-                break
+                self.off_motors()
+                return motor_mean
 
             if self.stopwatch.time() > time:
-                break
-
-        self.motor_r.hold()
-        self.motor_l.hold()
+                self.off_motors()
+                return motor_mean
 
     def pid_line_grabber(  # pylint: disable=invalid-name
         self,
@@ -806,10 +808,12 @@ class Robot:
             if color_read == "None":
                 break
 
-        self.motor_r.hold()
-        self.motor_l.hold()
+        self.off_motors()
 
         return array
+
+
+
 
     def min_aligner(
         self,
@@ -1132,8 +1136,7 @@ class Robot:
             self.motor_r.dc(vel + (vel * wrong_read_perc * right_multiplier * sign))
             self.motor_l.dc(vel - (vel * color_count_perc * left_multiplier * sign))
 
-        self.motor_l.hold()
-        self.motor_r.hold()
+        self.off_motors()
 
         WHEEL_LENGTH = (
             const.WHEEL_DIAMETER * math.pi
@@ -1354,6 +1357,8 @@ class Robot:
 
             self.motor_r.dc(vel + (vel * wrong_read_perc * right_multiplier * sign))
             self.motor_l.dc(vel - (vel * color_count_perc * left_multiplier * sign))
+        
+        self.off_motors()
 
     def get_average_reading(self, sensor_func, num_reads=100):
         measures = []
@@ -1362,7 +1367,7 @@ class Robot:
         mean = sum(measures) / len(measures)
         return mean
 
-    def move_until_end_of_duct(self, speed = 25, inverted = False, num_reads = 200):
+    def move_until_end_of_duct(self, speed = 25, inverted = False, num_reads = 50):
         print("Moving until end of duct")
         sign = 1 if not inverted else -1
         while self.get_average_reading(self.ultra_front.distance, num_reads=num_reads) < const.DUCT_ENDS_US_DIFF:
@@ -1370,14 +1375,37 @@ class Robot:
             self.motor_r.dc(sign*-speed)
         self.off_motors()
 
-    def move_until_beginning_of_duct(self, speed = 25, inverted = False, num_reads = 200):
+    def move_until_beginning_of_duct(self, speed = 25, inverted = False, num_reads = 100, time_limit = 5000):
         print("Moving until beginning of duct")
+        self.stopwatch.reset()
+        motor_mean = 0
         sign = 1 if not inverted else -1
-        while self.get_average_reading(self.ultra_front.distance, num_reads=num_reads) > const.DUCT_ENDS_US_DIFF :
+        while self.get_average_reading(self.ultra_front.distance, num_reads=num_reads) > const.DUCT_ENDS_US_DIFF and self.stopwatch.time() < time_limit and motor_mean < 150:
             self.motor_l.dc(sign*speed)
             self.motor_r.dc(sign*-speed)
+            motor_mean = (abs(self.motor_l.angle()) + abs(self.motor_r.angle()))/2
         self.off_motors()
 
     def reset_both_motor_angles(self):
         self.motor_l.reset_angle(0)
         self.motor_r.reset_angle(0)
+
+        
+    def black_line_alignment_routine(self):
+        self.forward_while_same_reflection(speed_r=-40, speed_l=-40)
+        self.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
+        self.pid_walk(cm=5, vel=-40)
+        self.forward_while_same_reflection()
+        self.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
+        self.pid_walk(cm=30, vel=-40)
+        self.pid_turn(-90)
+        self.forward_while_same_reflection()
+        self.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
+
+    def leaves_duct_at_correct_place(self):
+        self.pid_walk(cm=40, vel=-30)
+        self.pid_turn(90)
+        self.forward_while_same_reflection()
+        self.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
+        self.pid_walk(cm=17, vel=-30)
+        self.motor_claw.run_target(300, -20)
