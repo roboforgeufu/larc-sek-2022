@@ -44,6 +44,7 @@ from domain.gas_duct import (
     duct_get,
     duct_measure_hole,
     gas_duct_routine,
+    too_close_maneuver,
 )
 from domain.localization import (
     back_from_water_routine,
@@ -153,11 +154,11 @@ def land_main(toph: Robot):
     numeric_mbox = NumericMailbox("measures", server)
     while True:
 
-        #alinha com a linha preta
+        # alinha com a linha preta
         toph.certify_line_alignment_routine(
             target_color=Color.BLACK, sensor_color=toph.color_l, motor=toph.motor_l
         )
-        toph.pid_walk(cm=15,vel=-30)
+        toph.pid_walk(cm=15, vel=-30)
         numeric_mbox.wait()
         num = numeric_mbox.read()
 
@@ -174,6 +175,8 @@ def land_main(toph: Robot):
         duct_seek_routine_new(toph, color_order[index + 1])
         numeric_mbox.send(0)
         return_to_idle_position(toph)
+        numeric_mbox.wait()
+        toph.pid_walk(cm=7, vel=-60)
 
 
 def water_main(katara: Robot):
@@ -181,9 +184,9 @@ def water_main(katara: Robot):
     # conexao entre os bricks por bluetooth
     katara.ev3_print(get_hostname())
     client = BluetoothMailboxClient()
-    ev3_print("CLIENT: establishing connection...")
+    katara.ev3_print("CLIENT: establishing connection...")
     client.connect(const.SERVER)
-    ev3_print("CLIENT: connected!")
+    katara.ev3_print("CLIENT: connected!")
 
     numeric_mbox = NumericMailbox("measures", client)
 
@@ -211,14 +214,18 @@ def water_main(katara: Robot):
     logic_mbox.wait()
 
     while True:
-        measured_value = gas_duct_routine(katara, delivery=delivery)
+        measured_value, turn_counter = gas_duct_routine(katara, delivery=delivery)
         # Envia o valor
         numeric_mbox.send(measured_value)
         # Espera confirmação
         numeric_mbox.wait()
 
-        back_from_water_routine(katara)
+        back_from_water_routine(katara, turn_counter)
         duct_get(katara)
+
+        # Libera toph
+        numeric_mbox.send(0)
+
         back_to_water_routine1(katara)
         back_to_water_routine2(katara)
         delivery = measured_value
@@ -239,50 +246,52 @@ def test_toph():
         color_max_value=110,
         debug=True,
     )
-    
-    toph.pid_walk(cm=15,vel=-30)
-    wait_button_pressed(toph.brick)
 
     while True:
         duct_ends(toph)
         wait_button_pressed(toph.brick)
-        toph.pid_walk(cm=8, vel=20)
+        toph.pid_walk(cm=12, vel=20)
         toph.off_motors()
         wait_button_pressed(toph.brick)
         toph.motor_claw.reset_angle(0)
         toph.motor_claw.run_target(300, const.CLAW_UP)
         wait_button_pressed(toph.brick)
-        toph.motor_claw.run_target(300, -10)
+        toph.motor_claw.run_target(300, -20)
         wait_button_pressed(toph.brick)
 
-    # algoritmo de localizacao terrestre
-    color_order = land_position_routine(toph)
-    valid_colors = [Color.YELLOW, Color.RED, Color.BLUE]
-    for color in valid_colors:
-        if color not in color_order:
-            color_order.append(color)
-    color_order.append("None")
-    toph.ev3_print(color_order)
-    toph.ev3_print(color_order[0])
-    toph.ev3_print(color_order[1])
-    toph.ev3_print(color_order[2])
-    toph.ev3_print(color_order[3])
-    # termina com o sensor no buraco na primeira cor da esquerda p/ a direita
+#############################################################################
 
-    # manobras
-    toph.pid_walk(cm=5, vel=-60)
-    toph.pid_turn(90)
-    toph.pid_walk(cm=5, vel=-60)
-    toph.forward_while_same_reflection()
-    toph.pid_walk(cm=7, vel=-60)
-    toph.certify_line_alignment_routine(
-        target_color=Color.BLACK, sensor_color=toph.color_l, motor=toph.motor_l
-    )
-    # termina com o sensor esquerdo sobre a linha preta da primeira cor
+    # # algoritmo de localizacao terrestre
+    # color_order = land_position_routine(toph)
+    # valid_colors = [Color.YELLOW, Color.RED, Color.BLUE]
+    # for color in valid_colors:
+    #     if color not in color_order:
+    #         color_order.append(color)
+    # color_order.append("None")
+    # toph.ev3_print(color_order[0])
+    # toph.ev3_print(color_order[1])
+    # toph.ev3_print(color_order[2])
+    # toph.ev3_print(color_order[3])
+    # # termina com o sensor no buraco na primeira cor da esquerda p/ a direita
+
+    # # manobras
+    # toph.pid_walk(cm=5, vel=-60)
+    # toph.pid_turn(90)
+    # toph.pid_walk(cm=5, vel=-60)
+    # toph.forward_while_same_reflection()
+    # toph.pid_walk(cm=7, vel=-60)
+    # # termina de frente para a linha preta
 
     # dutos subsequentes (comunicação bluetooth)
-    num = 15
+    color_order = [Color.BLUE,Color.YELLOW,Color.RED,"None"]
     while True:
+
+        #alinha com a linha preta
+        toph.certify_line_alignment_routine(
+            target_color=Color.BLACK, sensor_color=toph.color_l, motor=toph.motor_l
+        )
+        toph.pid_walk(cm=15,vel=-30)
+        num = 10
 
         if num == 10:
             toph.line_follower_color_id(toph.color_l, break_color=Color.YELLOW)
@@ -296,6 +305,9 @@ def test_toph():
 
         duct_seek_routine_new(toph, color_order[index + 1])
         return_to_idle_position(toph)
+        wait_button_pressed(toph.brick)
+        toph.pid_walk(cm=7, vel=-60)
+    
 
 
 def test_katara():
@@ -315,16 +327,15 @@ def test_katara():
     )
 
     katara.motor_claw.run_target(300, const.CLAW_UP)
-    # wait_button_pressed(katara.brick)
 
     # water_position_routine(katara)
     # back_to_water_routine(katara)
 
-    delivery = None
+    delivery = 10
 
     while True:
-        measured_value = gas_duct_routine(katara, delivery=delivery)
-        back_from_water_routine(katara)
+        measured_value, turn_counter = gas_duct_routine(katara, delivery=delivery)
+        back_from_water_routine(katara, turn_counter)
         duct_get(katara)
         back_to_water_routine1(katara)
         back_to_water_routine2(katara)

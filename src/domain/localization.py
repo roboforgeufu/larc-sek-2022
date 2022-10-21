@@ -100,7 +100,7 @@ def land_position_routine(robot: Robot):
 
         if location == "RAMP":
 
-            robot.pid_accelerated_walk(-500, 3)
+            robot.pid_accelerated_walk(-500, 2)
             robot.pid_turn(180)
 
         elif location == "COLOR":
@@ -113,37 +113,36 @@ def land_position_routine(robot: Robot):
             )
             robot.line_follower_color_id(robot.color_r)
 
-
             robot.pid_accelerated_walk(-500, 2)
-            robot.pid_turn(150)
+            robot.pid_turn(165)
             robot.turn_till_color(
                 direction="right", sensor_color=robot.color_l, target_color=Color.BLACK
             )
-            robot.line_grabber(vel = 20, time = 3000, sensor = robot.color_l)
+            robot.line_grabber(vel=20, time=3000, sensor=robot.color_l)
             color_order = robot.line_follower_color_id(robot.color_l, array=color_order)
 
             robot.pid_accelerated_walk(-500, 2)
-            robot.pid_turn(-150)
+            robot.pid_turn(-165)
             robot.turn_till_color(
                 direction="left", sensor_color=robot.color_r, target_color=Color.BLACK
             )
-            robot.line_grabber(vel = 20, time = 3000, sensor = robot.color_r)
+            robot.line_grabber(vel=20, time=3000, sensor=robot.color_r)
             robot.line_follower_color_id(robot.color_r)
 
             break
 
         elif location == "EDGE":
-            robot.pid_accelerated_walk(-500, 3)
+            robot.pid_accelerated_walk(-500, 2)
             robot.pid_turn(-90)
 
         else:
-            robot.pid_accelerated_walk(-500, 3)
+            robot.pid_accelerated_walk(-500, 2)
 
     return color_order
 
 
-def back_from_water_routine(robot: Robot):
-    robot.pid_turn(-90)
+def back_from_water_routine(robot: Robot, turn_counter: int):
+    robot.pid_turn(-(90 * turn_counter))
     robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
     robot.pid_walk(1, -80)
     robot.pid_turn(-90)
