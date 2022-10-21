@@ -9,6 +9,8 @@ from utils import wait_button_pressed
 
 
 def gas_duct_routine(robot: Robot, delivery=None):
+    turn_counter = 1
+
     robot.forward_while_same_reflection(reflection_diff=const.COL_REFLECTION_HOLE_DIFF)
     robot.pid_walk(10, -40)
     robot.pid_turn(-90)
@@ -16,30 +18,20 @@ def gas_duct_routine(robot: Robot, delivery=None):
     robot.move_to_distance(const.WALL_FOLLOWER_FRONT_DIST, sensor=robot.ultra_front)
     robot.pid_turn(-90)
 
-    robot.min_aligner(min_function=robot.infra_side.distance)
-
     while True:
-        wall_flw_value = robot.pid_wall_follower(front_sensor=robot.ultra_front)
+        if robot.infra_side.distance() < const.WALL_SEEN_DIST:
+            robot.min_aligner(
+                min_function=robot.infra_side.distance,
+                motor_correction=0.3,
+            )
+            wall_flw_value = robot.pid_wall_follower(front_sensor=robot.ultra_front)
+        else:
+            wall_flw_value = 1
+        robot.ev3_print("WFLWVL:", wall_flw_value)
         if wall_flw_value == 1:
             # Curva pra dentro ou buraco
-            # robot.simple_walk(1, 30)
-
-            initial_motor_l = robot.motor_l.angle()
-            initial_motor_r = robot.motor_r.angle()
-            while robot.infra_side.distance() < const.WALL_SEEN_DIST and (
-                abs(robot.motor_l.angle() - initial_motor_l)
-                < robot.cm_to_motor_degrees(3)
-                and abs(robot.motor_r.angle() - initial_motor_r)
-                < robot.cm_to_motor_degrees(3)
-            ):
-                robot.brick.light.on(Color.ORANGE)
-                robot.motor_l.dc(30)
-                robot.motor_r.dc(30)
-            robot.off_motors()
-            robot.brick.light.off()
-
-            if check_small_gap(robot):
-                continue
+            robot.pid_walk(4, 30)
+            check_small_gap(robot)
 
             if check_hole(robot):
                 # buraco
@@ -57,33 +49,36 @@ def gas_duct_routine(robot: Robot, delivery=None):
                             duct_deliver(robot, measured_value)
                             delivery = None
                     else:
-                        return measured_value
+                        return measured_value, turn_counter
                 else:
                     robot.pid_walk(3, 60)
             else:
                 # curva pra dentro
+                turn_counter += 1
                 duct_follower_turn_routine(robot)
         elif wall_flw_value == 2:
             # Curva pra fora
+            turn_counter -= 1
             robot.move_to_distance(
                 const.WALL_FOLLOWER_FRONT_DIST, sensor=robot.ultra_front
             )
             robot.pid_turn(-90)
-        else:
+        elif wall_flw_value == 3:
             # Chegou na borda do mapa
+            robot.off_motors()
+            armagedon_the_end_of_times(robot)
             break
-        robot.min_aligner(min_function=robot.infra_side.distance, motor_correction=0.5)
-    if wall_flw_value == 3:
-        armagedon_the_end_of_times(robot)
-    robot.off_motors()
+        else:
+            # Perto demais, afasta
+            too_close_maneuver(robot)
 
 
 def duct_follower_turn_routine(robot: Robot, speed=const.SEARCH_WALL_SPEED):
     robot.ev3_print(duct_follower_turn_routine.__name__)
     robot.brick.speaker.beep()
     # wait_button_pressed(robot.brick)
-    robot.pid_walk(14)
-    robot.pid_turn(90)
+    robot.pid_walk(15, vel=40)
+    robot.simple_turn(90, speed=40)
 
     robot.ev3_print("infra_side:", robot.infra_side.distance())
     while robot.infra_side.distance() > const.WALL_SEEN_DIST:
@@ -105,15 +100,36 @@ def check_hole(robot: Robot):
     hole_seen = robot.infra_side.distance() <= const.WALL_SEEN_DIST
     if hole_seen:
         robot.min_aligner(robot.infra_side.distance)
+        if robot.infra_side.distance() < const.WALL_FOLLOWER_SIDE_DIST:
+            robot.motor_sensor.run_target(const.INFRA_SPEED, const.INFRA_UP, wait=False)
+            too_close_maneuver(robot)
     robot.motor_sensor.run_target(const.INFRA_SPEED, const.INFRA_UP)
     return hole_seen
 
 
 def check_small_gap(robot: Robot):
     """Confere se é um buraco pequeno no gasoduto. Retorna True caso seja."""
-    robot.simple_walk(const.GAS_DUCT_SMALL_GAP, 30)
+    initial_motor_l = robot.motor_l.angle()
+    initial_motor_r = robot.motor_r.angle()
+    robot.brick.light.on(Color.ORANGE)
+    while robot.infra_side.distance() > const.WALL_FOLLOWER_SIDE_DIST and (
+        abs(robot.motor_l.angle() - initial_motor_l)
+        < robot.cm_to_motor_degrees(const.GAS_DUCT_SMALL_GAP)
+        and abs(robot.motor_r.angle() - initial_motor_r)
+        < robot.cm_to_motor_degrees(const.GAS_DUCT_SMALL_GAP)
+    ):
+        # robot.ev3_print("CK_SMLGAP:", robot.infra_side.distance())
+        robot.motor_l.dc(30)
+        robot.motor_r.dc(30)
+    robot.off_motors()
+    robot.brick.light.off()
+
     duct_seen = robot.infra_side.distance() <= const.WALL_SEEN_DIST
-    robot.simple_walk(const.GAS_DUCT_SMALL_GAP / 2, -30)
+    robot.brick.speaker.beep()
+    robot.brick.light.on(Color.ORANGE)
+    if not duct_seen:
+        robot.move_both_to_target(target_l=initial_motor_l, target_r=initial_motor_r)
+    robot.brick.light.off()
     return duct_seen
 
 
@@ -139,9 +155,9 @@ def duct_measure_hole(robot: Robot):
     robot.ev3_print("MEASURE:", measurement)
 
     diff_to_size = [
-        abs(measurement - 12),
-        abs(measurement - 17),
-        abs(measurement - 22),
+        abs(measurement - 10),
+        abs(measurement - 15),
+        abs(measurement - 20),
     ]
     min_diff_idx = diff_to_size.index(min(diff_to_size))
 
@@ -156,7 +172,6 @@ def duct_measure_hole(robot: Robot):
         measured_value = 20
     else:
         measured_value = 0
-    robot.ev3_print("S_MEASURE:", measured_value)
     return measured_value
 
 
@@ -217,3 +232,13 @@ def duct_get(robot: Robot):
     robot.forward_while_same_reflection()
     robot.pid_walk(cm=2, vel=-30)
     robot.pid_align()
+
+
+def too_close_maneuver(robot: Robot):
+    # Manobra pra colocar o robô a uma distância mais apropriada do gasoduto
+    robot.pid_turn(90)
+    robot.move_to_distance(
+        distance=const.WALL_FOLLOWER_FRONT_DIST, sensor=robot.ultra_front
+    )
+    robot.pid_turn(-90)
+    robot.ev3_print("MNV IR:", robot.infra_side.distance())

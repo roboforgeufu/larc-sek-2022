@@ -861,20 +861,22 @@ class Robot:
 
     def pid_wall_follower(
         self,
-        speed=50,
+        speed=30,
         front_sensor=None,
         side_dist=const.WALL_FOLLOWER_SIDE_DIST,
         pid: PIDValues = PIDValues(
             kp=0.8,
             ki=0.001,
-            kd=1,
+            kd=0.5,
         ),
     ):
         """Seguidor de parede com controle PID simples."""
-        self.ev3_print(self.pid_wall_follower.__name__)
+        # self.ev3_print(self.pid_wall_follower.__name__)
 
         if front_sensor is None:
             front_sensor = self.ultra_front
+
+        initial_time = self.stopwatch.time()
 
         motor_error_i = 0
         prev_motor_error = 0
@@ -896,16 +898,31 @@ class Robot:
                 pid.kp * motor_error + pid.ki * motor_error_i + pid.kd * motor_error_d
             )
 
-            self.ev3_print("IR dff:", dist_diff, "|", motor_error)
+            # self.ev3_print("IR dff:", dist_diff, "|", motor_error)
 
             self.ev3_print(
+                "PID_WLL:",
                 motor_error,
                 motor_error_i,
                 motor_error_d,
             )
 
+            # self.ev3_print("WLFLW t:", self.stopwatch.time() - initial_time)
+
             # Condições de parada
-            if abs(motor_error) > 100 and abs(motor_error_d) > 60:
+            if self.infra_side.distance() == 0:
+                self.brick.speaker.beep(700)
+                self.brick.speaker.beep(100)
+                return_value = 4
+                break
+            if (
+                abs(motor_error) > 100
+                and abs(motor_error_d) > 60
+                and (
+                    self.stopwatch.time() - initial_time
+                    > const.WALL_FOLLOWER_THRESHOLD_TIME
+                )
+            ):
                 return_value = 1
                 break
             if front_sensor.distance() < 100:
@@ -968,6 +985,8 @@ class Robot:
         initial_degrees_l = self.motor_l.angle()
         initial_degrees_r = self.motor_r.angle()
 
+        initial_time = self.stopwatch.time()
+
         diff = sensor.distance() - distance
         diff_i = 0
         prev_diff = diff
@@ -996,6 +1015,18 @@ class Robot:
                 or abs(initial_degrees_r - self.motor_r.angle()) > max_motor_degrees
             ):
                 break
+
+            # self.ev3_print("MV_DIST:", self.motor_l.speed(), self.motor_r.speed())
+            if (
+                abs(self.motor_l.speed()) < const.PID_TURN_MIN_SPEED
+                and abs(self.motor_r.speed()) < const.PID_TURN_MIN_SPEED
+                and (
+                    self.stopwatch.time() - initial_time
+                    > const.MV_TO_DIST_THRESHOLD_TIME
+                )
+            ):
+                break
+
         # self.ev3_print(sensor.distance())
         self.off_motors()
 
@@ -1370,9 +1401,12 @@ class Robot:
     def move_until_end_of_duct(self, speed = 25, inverted = False, num_reads = 50):
         print("Moving until end of duct")
         sign = 1 if not inverted else -1
-        while self.get_average_reading(self.ultra_front.distance, num_reads=num_reads) < const.DUCT_ENDS_US_DIFF:
-            self.motor_l.dc(sign*speed)
-            self.motor_r.dc(sign*-speed)
+        while (
+            self.get_average_reading(self.ultra_front.distance, num_reads=num_reads)
+            < const.DUCT_ENDS_US_DIFF
+        ):
+            self.motor_l.dc(sign * speed)
+            self.motor_r.dc(sign * -speed)
         self.off_motors()
 
     def move_until_beginning_of_duct(self, speed = 25, inverted = False, num_reads = 100, time_limit = 5000):

@@ -44,6 +44,7 @@ from domain.gas_duct import (
     duct_get,
     duct_measure_hole,
     gas_duct_routine,
+    too_close_maneuver,
 )
 from domain.localization import (
     back_from_water_routine,
@@ -153,11 +154,11 @@ def land_main(toph: Robot):
     numeric_mbox = NumericMailbox("measures", server)
     while True:
 
-        #alinha com a linha preta
+        # alinha com a linha preta
         toph.certify_line_alignment_routine(
             target_color=Color.BLACK, sensor_color=toph.color_l, motor=toph.motor_l
         )
-        toph.pid_walk(cm=15,vel=-30)
+        toph.pid_walk(cm=15, vel=-30)
         numeric_mbox.wait()
         num = numeric_mbox.read()
 
@@ -183,9 +184,9 @@ def water_main(katara: Robot):
     # conexao entre os bricks por bluetooth
     katara.ev3_print(get_hostname())
     client = BluetoothMailboxClient()
-    ev3_print("CLIENT: establishing connection...")
+    katara.ev3_print("CLIENT: establishing connection...")
     client.connect(const.SERVER)
-    ev3_print("CLIENT: connected!")
+    katara.ev3_print("CLIENT: connected!")
 
     numeric_mbox = NumericMailbox("measures", client)
 
@@ -213,14 +214,18 @@ def water_main(katara: Robot):
     logic_mbox.wait()
 
     while True:
-        measured_value = gas_duct_routine(katara, delivery=delivery)
+        measured_value, turn_counter = gas_duct_routine(katara, delivery=delivery)
         # Envia o valor
         numeric_mbox.send(measured_value)
         # Espera confirmação
         numeric_mbox.wait()
 
-        back_from_water_routine(katara)
+        back_from_water_routine(katara, turn_counter)
         duct_get(katara)
+
+        # Libera toph
+        numeric_mbox.send(0)
+
         back_to_water_routine1(katara)
         back_to_water_routine2(katara)
         delivery = measured_value
@@ -322,16 +327,15 @@ def test_katara():
     )
 
     katara.motor_claw.run_target(300, const.CLAW_UP)
-    # wait_button_pressed(katara.brick)
 
     # water_position_routine(katara)
     # back_to_water_routine(katara)
 
-    delivery = None
+    delivery = 10
 
     while True:
-        measured_value = gas_duct_routine(katara, delivery=delivery)
-        back_from_water_routine(katara)
+        measured_value, turn_counter = gas_duct_routine(katara, delivery=delivery)
+        back_from_water_routine(katara, turn_counter)
         duct_get(katara)
         back_to_water_routine1(katara)
         back_to_water_routine2(katara)
