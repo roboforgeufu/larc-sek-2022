@@ -281,8 +281,6 @@ def duct_positioning_backwards(robot: Robot):
     i_share = 0
     error = 0
 
-    initial_average = (robot.motor_r.angle() + robot.motor_l.angle()) / 2
-
     has_seen_gas_duct = False
 
     duct_start_tuple = (0, 0)
@@ -290,6 +288,7 @@ def duct_positioning_backwards(robot: Robot):
 
     robot.motor_l.reset_angle(0)
     robot.motor_r.reset_angle(0)
+    initial_average = (robot.motor_r.angle() + robot.motor_l.angle()) / 2
 
     while True:
         current_average = (robot.motor_r.angle() + robot.motor_l.angle()) / 2
@@ -301,7 +300,7 @@ def duct_positioning_backwards(robot: Robot):
         #     "BACK_MEASR:", robot.motor_degrees_to_cm(current_average - initial_average)
         # )
 
-        if robot.motor_degrees_to_cm(abs(current_average - initial_average)) > 25:
+        if robot.motor_degrees_to_cm(abs(current_average - initial_average)) > 27:
             if (
                 robot.infra_side.distance() < const.WALL_SEEN_DIST
                 and not has_seen_gas_duct
@@ -311,6 +310,7 @@ def duct_positioning_backwards(robot: Robot):
                 has_seen_gas_duct = True
                 duct_start_avg = current_average
                 duct_start_tuple = (robot.motor_l.angle(), robot.motor_r.angle())
+
             if robot.infra_side.distance() > const.WALL_SEEN_DIST and has_seen_gas_duct:
                 robot.brick.light.off()
                 robot.brick.speaker.beep()

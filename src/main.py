@@ -227,8 +227,8 @@ def water_main(katara: Robot):
 
         back_from_water_routine(katara, turn_counter)
         new_measure = duct_get(katara)
-        if new_measure != 0:
-            measured_value = new_measure
+        # if new_measure != 0:
+        #     measured_value = new_measure
 
         # Libera toph
         numeric_mbox.send(0)
@@ -333,6 +333,7 @@ def test_katara():
     )
 
     katara.motor_claw.run_target(300, const.CLAW_UP)
+    wait_button_pressed(katara.brick)
 
     # water_position_routine(katara)
 
