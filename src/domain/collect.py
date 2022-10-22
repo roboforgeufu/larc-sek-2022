@@ -177,28 +177,50 @@ def duct_seek_routine_new(robot: Robot, color):
 
     line_grabber_distance_cm = 0
     if color != "None":
-        line_grabber_distance = robot.line_grabber(vel=20, time=3000, sensor=robot.color_l)
+        line_grabber_distance = robot.line_grabber(vel=20, time=3000, sensor=robot.color_l, multiplier = 0.8)
         line_grabber_distance_cm = (line_grabber_distance / 360) * const.WHEEL_LENGTH
 
     else:
         robot.pid_walk(cm=3,vel=-70)
         robot.forward_while_same_reflection()
+        
 
     distance_correction = 1.5
     distance_result = travelled_distance_cm + line_grabber_distance_cm + distance_correction - optimal_motor_choice
     print(line_grabber_distance_cm,distance_result)
 
     robot.pid_walk(cm=(distance_result), vel=-40)
+
+    # garante o meio do duto
+    line_grabber_correction_cm = robot.line_grabber(vel=20, time=3000, sensor=robot.color_l)
+    robot.pid_walk(cm=line_grabber_correction_cm, vel=-30)
+    robot.walk_to_hole(vel=30, mode=4)
+    robot.walk_to_hole(vel=30, mode=3)
+    duct_length = robot.duct_measurement_new(vel=30, color_check_sensor=robot.color_l, multiplier=0.5)
+
+    if(duct_length < 15):
+        duct_length = 10
+        duct_correction = 1.3
+    elif(duct_length < 20):
+        duct_length = 15
+        duct_correction = 1.225
+    else:
+        duct_length = 20
+        duct_correction = 1.15
+
+    robot.walk_to_hole(vel=30, mode=1)
+    robot.pid_walk(cm=((duct_length*duct_correction)/2), vel=-30)
+
     robot.pid_turn(-90)
-    robot.pid_walk(cm=5, vel=-50)
+    robot.pid_walk(cm=10, vel=-50)
     robot.forward_while_same_reflection()
     robot.pid_align(PIDValues(target=30, kp=1.2, ki=0.002, kd=0.3))
 
     ###REFATORAR, DAR UMA OLHADA
+    # pega o duto
     dist = robot.ultra_front.distance()
     dist = max(1, dist - 5)
     robot.move_to_distance(50, sensor=robot.ultra_front, max_cm=35)
-    # robot.duct_ends() ###################################################################
     robot.pid_walk(cm=8, vel=20)
     robot.off_motors()
     robot.motor_claw.reset_angle(0)
