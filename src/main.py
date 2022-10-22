@@ -43,6 +43,7 @@ from domain.gas_duct import (
     duct_follower_turn_routine,
     duct_get,
     duct_measure_hole,
+    duct_positioning_backwards,
     gas_duct_routine,
     too_close_maneuver,
 )
@@ -217,12 +218,17 @@ def water_main(katara: Robot):
     while True:
         measured_value, turn_counter = gas_duct_routine(katara, delivery=delivery)
         # Envia o valor
-        numeric_mbox.send(measured_value)
+
+        initial_time = katara.stopwatch.time()
+        while (katara.stopwatch.time() - initial_time) < 5000:
+            numeric_mbox.send(measured_value)
         # Espera confirmação
         numeric_mbox.wait()
 
         back_from_water_routine(katara, turn_counter)
-        duct_get(katara)
+        new_measure = duct_get(katara)
+        if new_measure != 0:
+            measured_value = new_measure
 
         # Libera toph
         numeric_mbox.send(0)
@@ -329,14 +335,21 @@ def test_katara():
     katara.motor_claw.run_target(300, const.CLAW_UP)
 
     # water_position_routine(katara)
-    # back_to_water_routine(katara)
 
-    delivery = 10
+    katara.pid_align()
+    delivery = duct_get(katara)
+    # delivery = None
+
+    back_to_water_routine1(katara)
+    back_to_water_routine2(katara)
 
     while True:
         measured_value, turn_counter = gas_duct_routine(katara, delivery=delivery)
         back_from_water_routine(katara, turn_counter)
-        duct_get(katara)
+        new_measure = duct_get(katara)
+        if new_measure != 0:
+            measured_value = new_measure
+
         back_to_water_routine1(katara)
         back_to_water_routine2(katara)
         delivery = measured_value

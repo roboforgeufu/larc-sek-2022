@@ -78,7 +78,7 @@ def duct_follower_turn_routine(robot: Robot, speed=const.SEARCH_WALL_SPEED):
     robot.brick.speaker.beep(250)
     robot.brick.speaker.beep(150)
     # wait_button_pressed(robot.brick)
-    robot.pid_walk(13, vel=40)
+    robot.pid_walk(15, vel=40)
     robot.simple_turn(90, speed=40)
 
     robot.ev3_print("infra_side:", robot.infra_side.distance())
@@ -181,10 +181,14 @@ def duct_measure_hole(robot: Robot):
 
     robot.ev3_print("MEASURE:", measurement)
 
+    return measurement_cleaning(measurement)
+
+
+def measurement_cleaning(dirty_measure: float):
     diff_to_size = [
-        abs(measurement - 10),
-        abs(measurement - 15),
-        abs(measurement - 20),
+        abs(dirty_measure - 10),
+        abs(dirty_measure - 15),
+        abs(dirty_measure - 20),
     ]
     min_diff_idx = diff_to_size.index(min(diff_to_size))
 
@@ -214,7 +218,7 @@ def armagedon_the_end_of_times(robot: Robot):
 def duct_deliver(robot: Robot, measured_value: int):
     # Abaixa o sensor enquanto faz ré
     robot.motor_sensor.run_target(const.INFRA_SPEED, const.INFRA_DOWN, wait=False)
-    robot.simple_walk((-(measured_value + 2) / 2) - 1.5, speed=30)
+    robot.simple_walk((-measured_value / 2) - 2.5, speed=30)
     robot.motor_sensor.run_target(const.INFRA_SPEED, const.INFRA_DOWN)
 
     # Alinha com o sensor do lado
@@ -223,11 +227,26 @@ def duct_deliver(robot: Robot, measured_value: int):
     )
 
     robot.pid_turn(90)
+
     robot.min_aligner(
         robot.ultra_front.distance,
         acceptable_range=60,
         motor_correction=const.KATARA_MIN_ALGN_CORRECTION,
     )
+
+    initial_time = robot.stopwatch.time()
+    elapsed_time = 0
+    i_share = 0
+    error = 0
+    robot.motor_l.reset_angle(0)
+    robot.motor_r.reset_angle(0)
+    while abs(robot.stopwatch.time() - initial_time) < const.DUCT_DELIVER_TIME_FORWARD:
+        elapsed_time, i_share, error = robot.loopless_pid_walk(
+            elapsed_time, i_share, error, vel=60
+        )
+    robot.off_motors()
+
+    robot.pid_walk(6, vel=-30)
 
     # Entrega
     robot.move_to_distance(40, sensor=robot.ultra_front, safe_max_read=150)
@@ -251,8 +270,89 @@ def duct_deliver(robot: Robot, measured_value: int):
     robot.simple_walk(((measured_value + 2) / 2) + 4, speed=30)
 
 
+def duct_positioning_backwards(robot: Robot):
+    """
+    Dá a ré de no máximo 40 cm, lendo o gasoduto com o sensor lateral e parando
+    no ponto ideal para coleta
+    """
+    robot.motor_sensor.run_target(const.INFRA_SPEED, const.INFRA_DOWN, wait=False)
+
+    elapsed_time = 0
+    i_share = 0
+    error = 0
+
+    initial_average = (robot.motor_r.angle() + robot.motor_l.angle()) / 2
+
+    has_seen_gas_duct = False
+
+    duct_start_tuple = (0, 0)
+    duct_start_avg = 0
+
+    robot.motor_l.reset_angle(0)
+    robot.motor_r.reset_angle(0)
+
+    while True:
+        current_average = (robot.motor_r.angle() + robot.motor_l.angle()) / 2
+        elapsed_time, i_share, error = robot.loopless_pid_walk(
+            elapsed_time, i_share, error, vel=-30
+        )
+
+        # robot.ev3_print(
+        #     "BACK_MEASR:", robot.motor_degrees_to_cm(current_average - initial_average)
+        # )
+
+        if robot.motor_degrees_to_cm(abs(current_average - initial_average)) > 25:
+            if (
+                robot.infra_side.distance() < const.WALL_SEEN_DIST
+                and not has_seen_gas_duct
+            ):
+                robot.brick.light.on(Color.ORANGE)
+                robot.brick.speaker.beep()
+                has_seen_gas_duct = True
+                duct_start_avg = current_average
+                duct_start_tuple = (robot.motor_l.angle(), robot.motor_r.angle())
+            if robot.infra_side.distance() > const.WALL_SEEN_DIST and has_seen_gas_duct:
+                robot.brick.light.off()
+                robot.brick.speaker.beep()
+                break
+            if (
+                abs(current_average - initial_average) >= robot.cm_to_motor_degrees(40)
+                and not has_seen_gas_duct
+            ):
+                robot.brick.light.off()
+                robot.brick.speaker.beep(150)
+                robot.brick.speaker.beep(250)
+                break
+        else:
+            robot.brick.light.on(Color.RED)
+    robot.off_motors()
+
+    duct_start_l, duct_start_r = duct_start_tuple
+    target_l = ((robot.motor_l.angle() + duct_start_l) / 2) + robot.cm_to_motor_degrees(
+        1.8
+    )
+    target_r = ((robot.motor_r.angle() + duct_start_r) / 2) + robot.cm_to_motor_degrees(
+        1.8
+    )
+
+    measurement = robot.motor_degrees_to_cm(abs(current_average - duct_start_avg))
+    robot.ev3_print("DIRTY_MSR:", measurement)
+    measurement = measurement_cleaning(measurement)
+    robot.ev3_print("FINAL_MSR:", measurement)
+    robot.motor_sensor.run_target(const.INFRA_SPEED, const.INFRA_UP, wait=False)
+
+    if duct_start_avg == 0:
+        measurement = 0
+
+    robot.move_both_to_target(target_l=target_l, target_r=target_r)
+    return measurement
+
+
 def duct_get(robot: Robot):
     """Recolhe o duto na terra"""
+    duct_measure = duct_positioning_backwards(robot)
+    robot.pid_turn(90)
+
     # recolhe o duto
     robot.move_to_distance(120, robot.ultra_front)
 
@@ -265,6 +365,7 @@ def duct_get(robot: Robot):
     robot.forward_while_same_reflection()
     robot.pid_walk(cm=2, vel=-30)
     robot.pid_align()
+    return duct_measure
 
 
 def too_close_maneuver(robot: Robot):

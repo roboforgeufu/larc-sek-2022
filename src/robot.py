@@ -114,6 +114,10 @@ class Robot:
         """Distância em centímetros -> grau nas rodas (motores) do robô"""
         return cm * (360 / (math.pi * self.wheel_diameter))
 
+    def motor_degrees_to_cm(self, degrees: float):
+        """Grau nas rodas (motores) do robô -> Distância em centímetros"""
+        return degrees * ((math.pi * self.wheel_diameter) / 360)
+
     def off_motors(self):
         """Desliga motores de locomoção."""
         self.motor_l.dc(0)

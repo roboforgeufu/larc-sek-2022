@@ -163,9 +163,6 @@ def back_from_water_routine(robot: Robot, turn_counter: int):
     robot.forward_while_same_reflection()
     robot.pid_align()
 
-    robot.pid_walk(40, vel=-30)
-    robot.pid_turn(90)
-
 
 def back_to_water_routine1(robot: Robot):
     """O robô está na rampa, desce para a água e vira para a direita."""
